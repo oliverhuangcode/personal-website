@@ -25,6 +25,7 @@ and an interactive SVG globe.
 | `npm test` | Unit tests (globe projection, nav) |
 | `npm run test:e2e` | Browser checks against `out/` — needs `npm run build` first |
 | `npm run test:a11y` | axe-core scan of every page — needs `npm run build` first |
+| `npm run sfx:preview` | Render every UI click to `sfx-preview/*.wav` to listen to |
 | `npm run lint` / `npm run typecheck` | ESLint / TypeScript |
 
 ## Layout
@@ -70,7 +71,10 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
 - **The boot screen** plays once per session and is skipped entirely under
   `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
   so returning visitors never see a flash of it.
-- **Sound** is off by default, never auto-plays, and is persisted in `localStorage`.
+- **Sound** is off by default, never auto-plays, and is persisted in `localStorage`. Each click
+  is synthesised in three layers — noise transient, inharmonic FM body, quiet fifth — which is
+  what makes it read as a mechanism rather than a beep. `npm run sfx:preview` renders them to
+  .wav so changes can be judged by ear, and fails on clipping or a non-silent tail (a pop).
 - **Food scores** keep the prototype's one-off `#7fb8de` (`--color-score`) rather than the
   accent. That is deliberate — don't "fix" it to match the token table.
 - **The boot overlay never takes pointer events.** It is decorative and sits above everything

@@ -111,6 +111,36 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
   await fresh.close();
 }
 
+// 8. Enabling sound actually produces audio on interaction
+{
+  const audio = await b.newContext({ viewport: { width: 1360, height: 880 } });
+  const ap = await audio.newPage();
+  await ap.goto(base + "/projects");
+  await ap.waitForTimeout(3400);
+  // Count every AudioContext node that gets started, without playing anything aloud.
+  await ap.evaluate(() => {
+    window.__started = 0;
+    // AudioBufferSourceNode defines its own start(), so patch both prototypes.
+    for (const proto of [AudioScheduledSourceNode.prototype, AudioBufferSourceNode.prototype]) {
+      if (!Object.hasOwn(proto, "start")) continue;
+      const realStart = proto.start;
+      proto.start = function (...args) {
+        window.__started++;
+        return realStart.apply(this, args);
+      };
+    }
+  });
+  await ap.getByRole("button", { name: "ROLE" }).click();
+  if ((await ap.evaluate(() => window.__started)) !== 0) fail.push("sound played while disabled");
+  await ap.keyboard.press("s");
+  await ap.getByRole("button", { name: "STACK" }).click();
+  await ap.waitForTimeout(200);
+  // One click = transient + carrier + modulator + fifth.
+  const started = await ap.evaluate(() => window.__started);
+  if (started !== 4) fail.push(`expected 4 voices per click, got ${started}`);
+  await audio.close();
+}
+
 console.log(fail.length ? "FAILURES:\n" + fail.join("\n") : "ALL CHECKS PASSED");
 
 await b.close();

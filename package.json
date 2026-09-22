@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "node scripts/e2e.mjs",
-    "test:a11y": "node scripts/a11y.mjs"
+    "test:a11y": "node scripts/a11y.mjs",
+    "sfx:preview": "node scripts/sfx-preview.mjs"
   },
   "dependencies": {
     "next": "16.3.6",
@@ -27,6 +28,7 @@
     "@types/react-dom": "^19",
     "@types/topojson-client": "^3.1.5",
     "axe-core": "^4.13.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
     "playwright": "^1.63.0",
