@@ -19,7 +19,7 @@ export function MediaFrame({ photo, sizes, className = "", fallback }: MediaFram
         <Image src={photo.src} alt={photo.alt} fill sizes={sizes} className="object-cover" />
       ) : (
         fallback && (
-          <div className="absolute inset-0 flex items-center justify-center font-mono text-[11px] tracking-[0.16em] text-border-strong">
+          <div className="absolute inset-0 flex items-center justify-center font-mono text-[11px] tracking-[0.16em] text-ink-muted">
             {fallback}
           </div>
         )

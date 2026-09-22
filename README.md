@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Oliver Huang — personal site
 
-## Getting Started
+A five-page personal site built to the tactical-HUD design in `design_handoff_personal_site`:
+dark ground, chamfered panels, condensed display type, keyboard navigation, a boot sequence
+and an interactive SVG globe.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16 (App Router) + TypeScript**, static export (`output: "export"`) — every route
+  pre-renders to HTML in `out/`, so it hosts anywhere (Vercel, GitHub Pages, S3).
+- **Tailwind v4**, with the design tokens defined in `@theme` in `src/app/globals.css`.
+  No component library: the design is entirely bespoke, so one would only get in the way.
+- **next/font** self-hosts Bebas Neue, Chakra Petch and Azeret Mono — no layout shift, no
+  requests to Google.
+- No animation library. Everything is CSS keyframes plus one `requestAnimationFrame` tween
+  for the globe.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server on :3000 |
+| `npm run build` | Static export into `out/` |
+| `npm start` | Serve the built `out/` locally |
+| `npm test` | Unit tests (globe projection, nav) |
+| `npm run test:e2e` | Browser checks against `out/` — needs `npm run build` first |
+| `npm run test:a11y` | axe-core scan of every page — needs `npm run build` first |
+| `npm run lint` / `npm run typecheck` | ESLint / TypeScript |
+
+## Layout
+
+```
+src/
+  app/            routes: / /about /projects /travel /food, plus layout and template
+  components/
+    site/         header, footer, boot screen, background, keyboard nav
+    projects/     character-select style project browser
+    travel/       globe, destination list, photo carousel
+    ui/           MediaFrame, NavLink
+  content/        all copy and data as typed modules — edit these, not the components
+  lib/
+    globe/        projection maths and Natural Earth coastlines (unit tested)
+    sound/        Web Audio click synthesis and the SFX preference
+    nav.ts        page order for keys 1–5 and arrow cycling
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Editing content
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Everything lives in `src/content`. `projects.ts` and `food.ts` are still the **placeholder
+copy invented for the prototype** and are marked as such — replace them.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Photos go in `public/` and are referenced as `{ src, alt }`:
 
-## Learn More
+```ts
+photos: [{ src: "/photos/travel/japan-1.jpg", alt: "Fushimi Inari at dawn" }],
+```
 
-To learn more about Next.js, take a look at the following resources:
+The carousel renders exactly as many slides as there are photos (max 8 per trip) and hides
+its controls at 0 or 1. Frames with no photo stay empty rather than showing a broken image.
+To add the full-bleed background, set `site.background` in `src/content/site.ts`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Design decisions worth knowing
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **State is never carried by colour alone.** Selected items also carry a filled block or a
+  word, and planned trips say `PLANNED` in text. Keep it that way.
+- **The globe** is an orthographic projection re-generated every frame. Coastlines are drawn
+  stroke-only; if you ever switch to filled land you must close partial rings along the limb
+  with SVG arc commands. The coastline data is Natural Earth 1:110m (public domain) via
+  `world-atlas`, so the prototype's hand-authored `land.js` is gone.
+- **The boot screen** plays once per session and is skipped entirely under
+  `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
+  so returning visitors never see a flash of it.
+- **Sound** is off by default, never auto-plays, and is persisted in `localStorage`.
 
-## Deploy on Vercel
+### Where this departs from the handoff
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- The header logo, the `OPEN TO WORK` chip and the `STACK` readout row are described in the
+  handoff README but had been deleted from the latest prototype. The prototype was followed.
+  Re-adding any of them is a few lines.
+- Food score bars use the accent colour rather than the prototype's one-off `#7fb8de`, per the
+  handoff's own token table.
+- The handoff specifies no mobile layout. Below 640px the nav type steps down and the SFX
+  toggle moves into the footer, where the keyboard hint (meaningless without a keyboard) is
+  hidden.
+- `INSTAGRAM` is omitted from the links until a URL is supplied, rather than shipping a dead
+  `#` link.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Still needed
+
+1. Six real projects — name, year, kind, status, overview, role, stack, outcome
+2. The real food log
+3. The Instagram URL
+4. All photography: background, one screenshot per project, up to 8 per trip, one per dish
+5. Confirmation that Melbourne is the primary base (the boot screen shows Auckland's
+   coordinates, which reads as deliberate — say if not)

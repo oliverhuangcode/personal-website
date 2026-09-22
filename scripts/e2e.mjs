@@ -2,45 +2,11 @@
  * End-to-end checks against the static export in `out/`.
  * Run `npm run build` first, then `npm run test:e2e`.
  */
-import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
-import { extname, join } from "node:path";
-
 import { chromium } from "playwright";
 
-const OUT = new URL("../out/", import.meta.url).pathname;
-const TYPES = {
-  ".html": "text/html",
-  ".css": "text/css",
-  ".js": "text/javascript",
-  ".json": "application/json",
-  ".txt": "text/plain",
-  ".woff2": "font/woff2",
-  ".svg": "image/svg+xml",
-};
+import { startStaticServer } from "./static-server.mjs";
 
-/** Serves `out/` the way a static host does: clean URLs, 404.html fallback. */
-const server = createServer(async (req, res) => {
-  const url = decodeURIComponent(new URL(req.url, "http://x").pathname);
-  const candidates = url.endsWith("/")
-    ? [join(url, "index.html"), url.replace(/\/$/, "") + ".html"]
-    : [url, url + ".html", join(url, "index.html")];
-  for (const candidate of candidates) {
-    try {
-      const body = await readFile(join(OUT, candidate));
-      res.writeHead(200, { "content-type": TYPES[extname(candidate)] ?? "application/octet-stream" });
-      return res.end(body);
-    } catch {
-      // try the next candidate
-    }
-  }
-  res.writeHead(404, { "content-type": "text/html" });
-  res.end(await readFile(join(OUT, "404.html")).catch(() => "not found"));
-});
-
-await new Promise((resolve) => server.listen(0, resolve));
-const base = `http://localhost:${server.address().port}`;
-
+const { base, close } = await startStaticServer();
 const b = await chromium.launch();
 const fail = [];
 
@@ -120,5 +86,5 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
 console.log(fail.length ? "FAILURES:\n" + fail.join("\n") : "ALL CHECKS PASSED");
 
 await b.close();
-server.close();
+close();
 if (fail.length) process.exit(1);
