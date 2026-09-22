@@ -1,26 +1,197 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── Design tokens ─────────────────────────────────────────────────────── */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  --color-*: initial;
+  --color-bg: #08070c;
+  --color-panel: #0b0a10;
+  /* Panel fill at e6 alpha, over the background image. */
+  --color-panel-glass: #0b0a10e6;
+  --color-panel-raised: #17151e;
+  --color-hairline: #201d28;
+  --color-border: #2e2b38;
+  --color-border-strong: #3d3949;
+  --color-ink: #eeecf2;
+  --color-ink-dim: #d3d0da;
+  --color-ink-muted: #a6a2b0;
+  --color-accent: #b987ff;
+  --color-accent-hover: #cbabff;
+  --color-title: #ffffff;
+  /* Planned-trip chips and empty meter tracks. */
+  --color-chip: #25222e;
+  --color-rule: #585264;
+  --color-transparent: transparent;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  --spacing-gutter: clamp(14px, 2.5vw, 36px);
+  --spacing-section: clamp(18px, 3vw, 40px);
+  --spacing-grid: clamp(18px, 3vw, 36px);
+
+  --text-hero: clamp(68px, 13vw, 190px);
+  --text-hero--line-height: 0.82;
+  --text-hero--letter-spacing: 0.02em;
+  --text-boot: clamp(64px, 12vw, 164px);
+  --text-boot--line-height: 0.8;
+  --text-boot--letter-spacing: 0.015em;
+  --text-page-title: clamp(34px, 4.5vw, 56px);
+  --text-page-title--line-height: 1;
+  --text-page-title--letter-spacing: 0.04em;
+  --text-project-name: clamp(54px, 7.5vw, 100px);
+  --text-project-name--line-height: 0.84;
+  --text-project-name--letter-spacing: 0.02em;
+  --text-trip-name: clamp(34px, 4.5vw, 50px);
+  --text-trip-name--line-height: 0.9;
+  --text-trip-name--letter-spacing: 0.03em;
+  --text-about-title: clamp(44px, 6.5vw, 80px);
+  --text-about-title--line-height: 0.86;
+  --text-about-title--letter-spacing: 0.02em;
+
+  --animate-rise: rise 0.35s ease both;
+  --animate-pulse: pulse 1.4s ease-in-out infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  @keyframes bootline {
+    from {
+      opacity: 0;
+      transform: translateX(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes bootout {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* next/font exposes these variables on <html>; resolve them at use site. */
+@theme inline {
+  --font-display: var(--font-bebas), sans-serif;
+  --font-body: var(--font-chakra), system-ui, sans-serif;
+  --font-mono: var(--font-azeret), ui-monospace, monospace;
+}
+
+/* ── Shape language: 45° chamfers, no rounded corners anywhere ─────────── */
+
+/* Bottom-right notch — buttons, links, small cards. */
+@utility chamfer-br {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%);
+}
+/* Top-right notch — cards and media frames. */
+@utility chamfer-tr {
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
+}
+/* Opposite corners — feature panels. */
+@utility chamfer-x {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 24px) 0,
+    100% 24px,
+    100% 100%,
+    24px 100%,
+    0 calc(100% - 24px)
+  );
+}
+@utility chamfer-x-sm {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 20px) 0,
+    100% 20px,
+    100% 100%,
+    20px 100%,
+    0 calc(100% - 20px)
+  );
+}
+/* Header HOME pill — angled both sides. */
+@utility chamfer-pill {
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
+}
+
+/* 1px hairline groups: children filled with panel over a hairline ground. */
+@utility hairline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--color-hairline);
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    background: var(--color-bg);
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
+  button {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+/* ── Boot screen ───────────────────────────────────────────────────────── */
+
+/* In the components layer so utilities (e.g. per-line durations) can override. */
+@layer components {
+  .boot-screen {
+    animation: bootout 0.5s ease 2.5s forwards;
+  }
+  .boot-line {
+    animation: bootline 0.4s ease both;
+  }
+}
+/* Set before first paint by the inline script in layout.tsx. */
+html[data-boot="skip"] .boot-screen {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .boot-screen {
+    display: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
