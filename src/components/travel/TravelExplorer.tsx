@@ -5,7 +5,7 @@ import { useState } from "react";
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
 import { pad2, pad3 } from "@/lib/nav";
-import { PITCH, blip } from "@/lib/sound/sound";
+import { blip } from "@/lib/sound/sound";
 
 import { Globe } from "./Globe";
 import { PhotoCarousel } from "./PhotoCarousel";
@@ -22,12 +22,12 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
   const photos = trip.photos.slice(0, MAX_TRIP_PHOTOS);
 
   const select = (i: number) => {
-    blip(PITCH.destination);
+    blip("destination");
     setSelection((s) => ({ index: i, seq: s.seq + 1 }));
   };
   const cycle = (step: number) => select((index + step + trips.length) % trips.length);
   const showPhoto = (i: number) => {
-    blip(PITCH.photo);
+    blip("photo");
     setPhotoIndex((prev) => prev.map((v, t) => (t === index ? i : v)));
   };
 

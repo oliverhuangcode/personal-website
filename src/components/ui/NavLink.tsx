@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { ComponentProps } from "react";
 
-import { PITCH, blip } from "@/lib/sound/sound";
+import { blip } from "@/lib/sound/sound";
 
 /** next/link that plays the navigation click. */
 export function NavLink({ onClick, ...props }: ComponentProps<typeof Link>) {
@@ -11,7 +11,7 @@ export function NavLink({ onClick, ...props }: ComponentProps<typeof Link>) {
     <Link
       {...props}
       onClick={(e) => {
-        blip(PITCH.nav);
+        blip("nav");
         onClick?.(e);
       }}
     />

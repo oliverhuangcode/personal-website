@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { PAGES, stepPage } from "@/lib/nav";
-import { PITCH, blip, toggleSound } from "@/lib/sound/sound";
+import { blip, toggleSound } from "@/lib/sound/sound";
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -18,7 +18,7 @@ export function KeyboardNav() {
 
   useEffect(() => {
     const go = (href: string) => {
-      blip(PITCH.nav);
+      blip("nav");
       router.push(href);
     };
 

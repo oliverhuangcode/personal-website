@@ -5,7 +5,7 @@ import { useState } from "react";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Project } from "@/content/types";
 import { pad2 } from "@/lib/nav";
-import { PITCH, blip } from "@/lib/sound/sound";
+import { blip } from "@/lib/sound/sound";
 
 const TABS = [
   { label: "INFO", title: "OVERVIEW", body: (p: Project) => p.overview },
@@ -27,7 +27,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
   const activeTab = TABS[tab];
 
   const pick = (i: number) => {
-    blip(PITCH.project);
+    blip("project");
     setSelected(i);
     setTab(0);
   };
@@ -64,7 +64,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                 aria-pressed={i === tab}
                 aria-controls="project-detail"
                 onClick={() => {
-                  blip(PITCH.tab);
+                  blip("tab");
                   setTab(i);
                 }}
                 className={`flex-1 px-2 py-3 text-center transition-colors duration-150 ${
