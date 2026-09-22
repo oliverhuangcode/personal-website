@@ -5,6 +5,9 @@ import { site } from "@/content/site";
 /**
  * Map-load style intro. Pure CSS: it fades itself out at 2.5s and is hidden
  * before first paint on repeat visits or under reduced motion (see layout.tsx).
+ *
+ * It never takes pointer events: it is decorative, and blocking clicks would
+ * make the whole page dead for the first three seconds of a session.
  */
 export function BootScreen() {
   const [first, last] = site.name.toUpperCase().split(" ");
@@ -13,7 +16,7 @@ export function BootScreen() {
   return (
     <div
       aria-hidden
-      className="boot-screen fixed inset-0 z-90 bg-[radial-gradient(120%_90%_at_62%_40%,#141120_0%,#0a0c0d_55%,#08070c_100%)]"
+      className="boot-screen pointer-events-none fixed inset-0 z-90 bg-[radial-gradient(120%_90%_at_62%_40%,#141120_0%,#0a0c0d_55%,#08070c_100%)]"
     >
       <div className="absolute inset-0 bg-[linear-gradient(100deg,#08070cf7_0%,#08070cd9_34%,#08070c4d_62%,#08070c99_100%)]" />
 

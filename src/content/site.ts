@@ -3,8 +3,8 @@ import type { ExternalLink, Photo, TimelineEntry } from "./types";
 export const site = {
   name: "Oliver Huang",
   title: "SOFTWARE ENGINEER",
-  /** Auckland, shown on the boot screen. */
-  coordinates: "36°51'S, 174°46'E",
+  /** Melbourne, shown on the boot screen. */
+  coordinates: "37°48'S, 144°57'E",
   bio: "Software engineer, originally from Auckland and now based in Melbourne. I studied at AUT and then Monash, ran projects for the Monash Association of Coding, and I'm joining Atlassian as a graduate in 2027.",
   /** Full-bleed image behind every page. Unset until a photo is supplied. */
   background: undefined as Photo | undefined,
@@ -25,9 +25,9 @@ export const timeline: TimelineEntry[] = [
   { year: "2022–23", org: "AUCKLAND UNIVERSITY OF TECHNOLOGY", role: "Auckland" },
 ];
 
-/** Add INSTAGRAM here once the URL is known. */
 export const links: ExternalLink[] = [
   { label: "LINKEDIN", href: "https://www.linkedin.com/in/oliverhuang03/" },
   { label: "GITHUB", href: "https://github.com/oliverhuangcode" },
+  { label: "INSTAGRAM", href: "https://www.instagram.com/olivrhuang/" },
   { label: "EMAIL", href: "mailto:oliverwhuang@gmail.com" },
 ];

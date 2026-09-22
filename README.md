@@ -71,25 +71,23 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
   so returning visitors never see a flash of it.
 - **Sound** is off by default, never auto-plays, and is persisted in `localStorage`.
+- **Food scores** keep the prototype's one-off `#7fb8de` (`--color-score`) rather than the
+  accent. That is deliberate — don't "fix" it to match the token table.
+- **The boot overlay never takes pointer events.** It is decorative and sits above everything
+  for three seconds; if it can be clicked, the whole page is dead for that window. There is an
+  e2e test for exactly this.
 
 ### Where this departs from the handoff
 
 - The header logo, the `OPEN TO WORK` chip and the `STACK` readout row are described in the
   handoff README but had been deleted from the latest prototype. The prototype was followed.
   Re-adding any of them is a few lines.
-- Food score bars use the accent colour rather than the prototype's one-off `#7fb8de`, per the
-  handoff's own token table.
 - The handoff specifies no mobile layout. Below 640px the nav type steps down and the SFX
   toggle moves into the footer, where the keyboard hint (meaningless without a keyboard) is
   hidden.
-- `INSTAGRAM` is omitted from the links until a URL is supplied, rather than shipping a dead
-  `#` link.
 
 ## Still needed
 
 1. Six real projects — name, year, kind, status, overview, role, stack, outcome
 2. The real food log
-3. The Instagram URL
-4. All photography: background, one screenshot per project, up to 8 per trip, one per dish
-5. Confirmation that Melbourne is the primary base (the boot screen shows Auckland's
-   coordinates, which reads as deliberate — say if not)
+3. All photography: background, one screenshot per project, up to 8 per trip, one per dish

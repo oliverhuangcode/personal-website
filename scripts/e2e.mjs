@@ -83,6 +83,34 @@ const detail = await p.locator("#project-detail").innerText();
 if (!detail.includes("OVERVIEW")) fail.push("selecting a project did not reset to INFO");
 if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("project name did not update");
 
+// 7. The boot overlay must not swallow interaction while it plays
+{
+  const fresh = await b.newContext({ viewport: { width: 1360, height: 880 } });
+  const bp = await fresh.newPage();
+  await bp.goto(base + "/travel");
+  await bp.waitForTimeout(900); // still inside the 3s boot sequence
+  const boot = bp.locator(".boot-screen");
+  if (!(await boot.isVisible())) fail.push("boot did not play on a fresh session");
+  if ((await boot.evaluate((el) => getComputedStyle(el).pointerEvents)) !== "none") {
+    fail.push("boot overlay intercepts pointer events");
+  }
+  const gd = () => bp.locator('[role="img"] path').nth(1).getAttribute("d");
+  const before = await gd();
+  const box = await bp.getByRole("img", { name: /Globe/ }).boundingBox();
+  const cx = box.x + box.width / 2;
+  const cy = box.y + box.height / 2;
+  await bp.mouse.move(cx, cy);
+  await bp.mouse.down();
+  for (let i = 1; i <= 12; i++) {
+    await bp.mouse.move(cx - i * 6, cy + i * 2);
+    await bp.waitForTimeout(16);
+  }
+  const during = await gd();
+  await bp.mouse.up();
+  if (during === before) fail.push("globe could not be dragged during the boot sequence");
+  await fresh.close();
+}
+
 console.log(fail.length ? "FAILURES:\n" + fail.join("\n") : "ALL CHECKS PASSED");
 
 await b.close();

@@ -19,13 +19,13 @@ export default function FoodPage() {
             <div className="flex flex-col gap-3 p-[18px]">
               <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-[32px] leading-none font-normal tracking-[0.04em]">{dish.name}</h2>
-                <span className="font-mono text-[20px] text-accent">
+                <span className="font-mono text-[20px] text-score">
                   {dish.score.toFixed(1)}
                   <span className="sr-only"> out of 10</span>
                 </span>
               </div>
               <div aria-hidden className="h-2 bg-chip">
-                <div className="h-full bg-accent" style={{ width: `${dish.score * 10}%` }} />
+                <div className="h-full bg-score" style={{ width: `${dish.score * 10}%` }} />
               </div>
               <p className="font-mono text-[11px] tracking-[0.12em] text-ink-muted">
                 {dish.city} · {dish.type}

@@ -20,6 +20,8 @@
   --color-title: #ffffff;
   /* Planned-trip chips and empty meter tracks. */
   --color-chip: #25222e;
+  /* Food scores only — deliberately not the accent. */
+  --color-score: #7fb8de;
   --color-rule: #585264;
   --color-transparent: transparent;
 
