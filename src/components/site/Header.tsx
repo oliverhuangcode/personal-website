@@ -43,17 +43,19 @@ function NavItem({ page, active }: { page: NavPage; active: boolean }) {
   );
 }
 
-/** Thin line running parallel to one slanted side of the HOME trapezoid, just outside it. */
+/**
+ * Thin line running parallel to one slanted side of the HOME trapezoid, just outside it.
+ * It overshoots the header and is clipped top and bottom so its ends sit flat on the edges.
+ */
 function HomeEdge({ side, active }: { side: "left" | "right"; active: boolean }) {
-  const left = side === "left";
   return (
     <svg
       aria-hidden
-      className={`pointer-events-none absolute top-0 h-full w-(--home-slant) overflow-visible stroke-ink ${
-        left ? "-left-[9px]" : "-right-[9px]"
+      className={`pointer-events-none absolute top-0 h-full w-(--home-slant) overflow-visible stroke-ink [clip-path:inset(0_-4px)] ${
+        side === "left" ? "-left-[9px]" : "-right-[9px] -scale-x-100"
       }`}
     >
-      <line x1={left ? "0" : "100%"} y1="0" x2={left ? "100%" : "0"} y2="100%" strokeWidth={active ? 2 : 1} />
+      <line x1="-10%" y1="-10%" x2="110%" y2="110%" strokeWidth={active ? 2 : 1} />
     </svg>
   );
 }
