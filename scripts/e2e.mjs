@@ -141,30 +141,33 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
   await audio.close();
 }
 
-// 9. Arrow keys belong to the page, not to navigation
+// 9. Up/down cycle pages; left/right are left to the page and its controls
 {
   const kp = await (await b.newContext({ viewport: { width: 1360, height: 600 } })).newPage();
   await kp.goto(base + "/food");
   await kp.waitForTimeout(3400);
-  for (const key of ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"]) {
+
+  // Left and right must not navigate.
+  for (const key of ["ArrowRight", "ArrowLeft"]) {
     await kp.keyboard.press(key);
-    await kp.waitForTimeout(150);
-    if (new URL(kp.url()).pathname !== "/food") {
-      fail.push(`${key} navigated away from /food`);
-      break;
-    }
+    await kp.waitForTimeout(200);
+    if (new URL(kp.url()).pathname !== "/food") fail.push(`${key} navigated away from /food`);
   }
-  // ...and they must still scroll.
-  await kp.evaluate(() => window.scrollTo(0, 0));
-  await kp.locator("body").click({ position: { x: 20, y: 300 } });
-  const y0 = await kp.evaluate(() => window.scrollY);
-  for (let i = 0; i < 8; i++) await kp.keyboard.press("ArrowDown");
-  await kp.waitForTimeout(250);
-  if ((await kp.evaluate(() => window.scrollY)) <= y0) fail.push("ArrowDown no longer scrolls the page");
-  // 1-5 and S still work.
-  await kp.keyboard.press("4");
+
+  // Down and up cycle in visual nav order: about, projects, home, travel, food.
+  await kp.keyboard.press("ArrowDown");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/about") fail.push("ArrowDown did not wrap food -> about");
+  await kp.keyboard.press("ArrowUp");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/food") fail.push("ArrowUp did not wrap about -> food");
+  await kp.keyboard.press("ArrowUp");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/travel") fail.push("ArrowUp did not step food -> travel");
+
+  await kp.keyboard.press("2");
   await kp.waitForTimeout(400);
-  if (new URL(kp.url()).pathname !== "/travel") fail.push("number keys stopped navigating");
+  if (new URL(kp.url()).pathname !== "/projects") fail.push("number keys stopped navigating");
   await kp.close();
 }
 

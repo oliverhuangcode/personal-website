@@ -42,7 +42,7 @@ src/
   lib/
     globe/        projection maths and Natural Earth coastlines (unit tested)
     sound/        Web Audio click synthesis and the SFX preference
-    nav.ts        page order for the 1–5 keys
+    nav.ts        page order for keys 1–5 and ↑↓ cycling
 ```
 
 ## Editing content
@@ -62,8 +62,9 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
 
 ## Design decisions worth knowing
 
-- **The arrow keys are left to the page**, for scrolling and for moving within a control.
-  Only 1–5 (pages) and S (sound) are bound globally.
+- **↑ and ↓ cycle pages; ← and → are left alone**, so they stay available to whatever control
+  has focus. Note that ↑↓ therefore take over from scrolling — fine on these short pages, but
+  worth remembering if one ever gets long.
 - **State is never carried by colour alone.** Selected items also carry a filled block or a
   word, and planned trips say `PLANNED` in text. Keep it that way.
 - **The globe** is an orthographic projection re-generated every frame. Coastlines are drawn

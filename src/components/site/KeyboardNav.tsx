@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { PAGES } from "@/lib/nav";
+import { PAGES, stepPage } from "@/lib/nav";
 import { blip, toggleSound } from "@/lib/sound/sound";
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -12,23 +12,34 @@ function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /**
- * 1–5 jump to a page, S toggles sound.
+ * 1–5 jump to a page, ↑ and ↓ cycle through them, S toggles sound.
  *
- * The arrow keys are deliberately left alone: they belong to the page, for
- * scrolling and for moving within a control.
+ * ← and → are deliberately left alone: they belong to whatever control has
+ * focus, such as moving along a row of tabs or thumbnails.
  */
 export function KeyboardNav() {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    const go = (href: string) => {
+      blip("nav");
+      router.push(href);
+    };
+
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
       if (isTypingTarget(e.target)) return;
 
       const n = Number(e.key);
       if (Number.isInteger(n) && n >= 1 && n <= PAGES.length) {
-        blip("nav");
-        router.push(PAGES[n - 1].href);
+        go(PAGES[n - 1].href);
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        go(stepPage(pathname, 1).href);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        go(stepPage(pathname, -1).href);
       } else if (e.key.toLowerCase() === "s" && !e.shiftKey) {
         toggleSound();
       }
@@ -36,7 +47,7 @@ export function KeyboardNav() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, pathname]);
 
   return null;
 }
