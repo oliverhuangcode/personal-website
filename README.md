@@ -42,7 +42,7 @@ src/
   lib/
     globe/        projection maths and Natural Earth coastlines (unit tested)
     sound/        Web Audio click synthesis and the SFX preference
-    nav.ts        page order for keys 1–5 and arrow cycling
+    nav.ts        page order for the 1–5 keys
 ```
 
 ## Editing content
@@ -62,6 +62,8 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
 
 ## Design decisions worth knowing
 
+- **The arrow keys are left to the page**, for scrolling and for moving within a control.
+  Only 1–5 (pages) and S (sound) are bound globally.
 - **State is never carried by colour alone.** Selected items also carry a filled block or a
   word, and planned trips say `PLANNED` in text. Keep it that way.
 - **The globe** is an orthographic projection re-generated every frame. Coastlines are drawn
@@ -70,7 +72,9 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   `world-atlas`, so the prototype's hand-authored `land.js` is gone.
 - **The boot screen** plays once per session and is skipped entirely under
   `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
-  so returning visitors never see a flash of it.
+  so returning visitors never see a flash of it. Add **`?boot`** to any URL to replay it
+  (e.g. `/travel?boot`) — handy for reviewing the intro. It overrides the once-per-session
+  flag but never `prefers-reduced-motion`.
 - **Sound** is off by default, never auto-plays, and is persisted in `localStorage`. Each click
   is synthesised in three layers — noise transient, inharmonic FM body, quiet fifth — which is
   what makes it read as a mechanism rather than a beep. `npm run sfx:preview` renders them to

@@ -28,8 +28,12 @@ export const viewport: Viewport = { themeColor: "#08070c" };
 /**
  * Runs before first paint: the boot screen plays once per session and never
  * under reduced motion. Doing this in CSS-land avoids a flash of the overlay.
+ *
+ * `?boot` on any URL replays it, for reviewing or screenshotting the intro.
+ * It overrides the once-per-session flag but not reduced motion — that one is
+ * an accessibility preference, and a query string has no business winning.
  */
-const bootScript = `try{var d=document.documentElement;if(sessionStorage.getItem("oh:booted")||matchMedia("(prefers-reduced-motion: reduce)").matches)d.dataset.boot="skip";sessionStorage.setItem("oh:booted","1")}catch(e){}`;
+const bootScript = `try{var d=document.documentElement;var f=new URLSearchParams(location.search).has("boot");if((!f&&sessionStorage.getItem("oh:booted"))||matchMedia("(prefers-reduced-motion: reduce)").matches)d.dataset.boot="skip";sessionStorage.setItem("oh:booted","1")}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

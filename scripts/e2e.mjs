@@ -141,6 +141,59 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
   await audio.close();
 }
 
+// 9. Arrow keys belong to the page, not to navigation
+{
+  const kp = await (await b.newContext({ viewport: { width: 1360, height: 600 } })).newPage();
+  await kp.goto(base + "/food");
+  await kp.waitForTimeout(3400);
+  for (const key of ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft"]) {
+    await kp.keyboard.press(key);
+    await kp.waitForTimeout(150);
+    if (new URL(kp.url()).pathname !== "/food") {
+      fail.push(`${key} navigated away from /food`);
+      break;
+    }
+  }
+  // ...and they must still scroll.
+  await kp.evaluate(() => window.scrollTo(0, 0));
+  await kp.locator("body").click({ position: { x: 20, y: 300 } });
+  const y0 = await kp.evaluate(() => window.scrollY);
+  for (let i = 0; i < 8; i++) await kp.keyboard.press("ArrowDown");
+  await kp.waitForTimeout(250);
+  if ((await kp.evaluate(() => window.scrollY)) <= y0) fail.push("ArrowDown no longer scrolls the page");
+  // 1-5 and S still work.
+  await kp.keyboard.press("4");
+  await kp.waitForTimeout(400);
+  if (new URL(kp.url()).pathname !== "/travel") fail.push("number keys stopped navigating");
+  await kp.close();
+}
+
+// 10. ?boot replays the intro even once the session flag is set
+{
+  const bc = await b.newContext({ viewport: { width: 1360, height: 880 } });
+  const bpage = await bc.newPage();
+  await bpage.goto(base + "/");
+  await bpage.waitForTimeout(3400);
+  await bpage.reload();
+  await bpage.waitForTimeout(600);
+  if (await bpage.locator(".boot-screen").isVisible()) fail.push("boot replayed without ?boot");
+  await bpage.goto(base + "/?boot");
+  await bpage.waitForTimeout(600);
+  if (!(await bpage.locator(".boot-screen").isVisible())) fail.push("?boot did not replay the intro");
+  await bpage.goto(base + "/travel?boot");
+  await bpage.waitForTimeout(600);
+  if (!(await bpage.locator(".boot-screen").isVisible())) fail.push("?boot did not work on a sub-page");
+  await bc.close();
+
+  // Reduced motion still wins over ?boot.
+  const rm = await b.newContext({ viewport: { width: 1360, height: 880 }, reducedMotion: "reduce" });
+  const rp = await rm.newPage();
+  await rp.goto(base + "/?boot");
+  await rp.waitForTimeout(500);
+  if (await rp.locator(".boot-screen").isVisible()) fail.push("?boot overrode prefers-reduced-motion");
+  await rm.close();
+}
+
 console.log(fail.length ? "FAILURES:\n" + fail.join("\n") : "ALL CHECKS PASSED");
 
 await b.close();
