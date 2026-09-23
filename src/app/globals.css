@@ -126,9 +126,9 @@
     0 calc(100% - 20px)
   );
 }
-/* Header HOME pill — angled both sides. */
-@utility chamfer-pill {
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 100%, 0 100%);
+/* Header HOME tab — trapezoid narrowing toward the bottom. */
+@utility chamfer-home {
+  clip-path: polygon(0 0, 100% 0, calc(100% - var(--home-slant)) 100%, var(--home-slant) 100%);
 }
 
 /* 1px hairline groups: children filled with panel over a hairline ground. */
