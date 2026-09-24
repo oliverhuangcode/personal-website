@@ -20,10 +20,12 @@ export default function HomePage() {
           <div className="size-[9px] rotate-45 bg-accent" />
           <div className="h-px flex-1 bg-linear-to-r from-border-strong to-transparent" />
         </div>
-        <div className="flex flex-wrap justify-center gap-2 font-mono text-[11px] font-medium tracking-[0.14em]">
+        {/* The chamfer clips borders and outlines, so the 1px frame is the wrapper showing
+            through, and it lights up to mark keyboard focus. */}
+        <div className="chamfer-br bg-border-strong p-px transition-colors duration-150 has-focus-visible:bg-accent">
           <NavLink
             href="/projects"
-            className="border border-border-strong px-3.5 py-2 text-ink transition-colors duration-150 hover:bg-ink hover:text-bg"
+            className="chamfer-br block bg-bg px-[26px] py-[13px] font-mono text-xs font-medium tracking-[0.16em] text-ink transition-colors duration-150 outline-none hover:bg-accent hover:text-bg"
           >
             VIEW PROJECTS ▸
           </NavLink>
