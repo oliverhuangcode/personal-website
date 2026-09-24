@@ -67,7 +67,7 @@ if (recentred !== before) fail.push("recentre did not return to the original vie
 await p.getByRole("button", { name: /JAPAN/ }).click();
 await p.waitForTimeout(1000);
 const beforeTap = await pathD();
-const marker = await p.locator("svg rect").boundingBox();
+const marker = await p.locator("svg rect.fill-accent").boundingBox();
 await p.mouse.click(marker.x + marker.width / 2, marker.y + marker.height / 2);
 await p.waitForTimeout(900);
 if ((await pathD()) !== beforeTap) fail.push("marker tap moved the globe unexpectedly");
