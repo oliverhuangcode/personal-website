@@ -37,7 +37,8 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
     <main className="flex flex-1 flex-col">
       <h1 className="sr-only">Projects</h1>
       <div className="mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-center gap-grid px-gutter pt-[clamp(20px,3vw,44px)]">
-        <div className="flex min-w-0 flex-col gap-2.5">
+        {/* Capped by window height so the page fits without scrolling on laptop screens. */}
+        <div className="flex w-full max-w-[max(240px,calc((100dvh-350px)*4/3))] min-w-0 flex-col gap-2.5 justify-self-center">
           <p className="font-mono text-[11px] tracking-[0.16em] text-ink-muted">
             PROJECT {no} / {total}
           </p>
@@ -97,7 +98,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
 
       <nav
         aria-label="Project roster"
-        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter py-[clamp(16px,2.5vw,28px)]"
+        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter py-[clamp(12px,min(2.5vw,3dvh),28px)]"
       >
         <div className="h-px bg-[linear-gradient(90deg,transparent,#2e2b38_20%,#2e2b38_80%,transparent)]" />
         {/* safe-center keeps the first thumbnail reachable when the row overflows. */}
@@ -105,7 +106,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
           {projects.map((p, i) => {
             const active = i === selected;
             return (
-              <li key={p.name} className="flex-[0_0_92px]">
+              <li key={p.name} className="flex-[0_0_72px]">
                 <button
                   type="button"
                   onClick={() => pick(i)}
@@ -115,7 +116,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                 >
                   <MediaFrame
                     photo={p.screenshot}
-                    sizes="92px"
+                    sizes="72px"
                     fallback={pad2(i + 1)}
                     className={`aspect-square w-full outline-2 -outline-offset-2 ${
                       active ? "outline-accent" : "outline-border"

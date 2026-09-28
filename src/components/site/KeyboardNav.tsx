@@ -28,8 +28,14 @@ export function KeyboardNav() {
     };
 
     const onKey = (e: KeyboardEvent) => {
-      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+      if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
+      // Holding a key doesn't race through pages, and a held ↑/↓ mustn't fall
+      // through to the browser and scroll the page it just landed on.
+      if (e.repeat) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") e.preventDefault();
+        return;
+      }
 
       const n = Number(e.key);
       if (Number.isInteger(n) && n >= 1 && n <= PAGES.length) {
