@@ -124,7 +124,7 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
 - **Navigation is spatial.** Pages slide in from the side of the header they sit on
   (`template.tsx`, React `<ViewTransition>`); `NavLink` and `KeyboardNav` tag each navigation
   `nav-forward`/`nav-back`. The header and footer are named so they hold still. Selection
-  highlights (nav marker, project tab, roster bar, trip row) share one name per group so they
+  highlights (project tab, roster bar, trip row — not the header marker, which snaps) share one name per group so they
   glide to the new pick — local picks therefore go through `startTransition`, which also means
   the DOM updates a frame or two after the click (tests must wait, not read immediately).
   View transitions hold `useEffect` until they finish, so anything that must move *during*

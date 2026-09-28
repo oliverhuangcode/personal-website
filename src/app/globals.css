@@ -314,12 +314,11 @@ html[data-boot="skip"] .boot-screen {
   animation: none;
 }
 
-/* Selection highlights glide to the new pick, like a menu cursor. Above the header,
-   since the nav marker lives in it. */
+/* Selection highlights glide to the new pick, like a menu cursor. The header's page
+   marker deliberately doesn't: it snaps with the page change. */
 ::view-transition-group(.marker) {
   animation-duration: 0.28s;
   animation-timing-function: var(--ease-snap);
-  z-index: 101;
 }
 
 @media (prefers-reduced-motion: reduce) {
