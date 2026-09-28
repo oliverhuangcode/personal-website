@@ -76,6 +76,13 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   so returning visitors never see a flash of it. Add **`?boot`** to any URL to replay it
   (e.g. `/travel?boot`) — handy for reviewing the intro. It overrides the once-per-session
   flag but never `prefers-reduced-motion`.
+- **Motion is for feedback, not decoration.** The ambient pieces (boot, holo core, globe) are
+  already busy, so everything else only moves when it tells you something: picking a project
+  or trip wipes the frame in and slides the copy after it (keyed on the selection, so every
+  pick replays it), and food meters fill on arrival. All of it is fast (≤0.35s, one
+  decelerating curve, no bounce). Key the *children* of an `aria-live` region, never the
+  region itself, or screen readers stop announcing. Reduced motion zeroes durations and
+  delays alike.
 - **Sound** is off by default, never auto-plays, and is persisted in `localStorage`. Each click
   is synthesised in three layers — noise transient, inharmonic FM body, quiet fifth — which is
   what makes it read as a mechanism rather than a beep. `npm run sfx:preview` renders them to

@@ -51,6 +51,11 @@
 
   --animate-rise: rise 0.35s ease both;
   --animate-pulse: pulse 1.4s ease-in-out infinite;
+  /* Selection feedback: fast, decelerating, no overshoot — a HUD snaps, it doesn't bounce. */
+  --animate-wipe: wipe 0.32s var(--ease-snap) both;
+  --animate-enter: enter 0.28s var(--ease-snap) both;
+  --animate-fill: fill 0.7s var(--ease-snap) both;
+  --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
 
   @keyframes rise {
     from {
@@ -69,6 +74,30 @@
     }
     50% {
       opacity: 1;
+    }
+  }
+  /* Reveals a media frame left to right. Nest it outside any chamfer: clip-paths stack. */
+  @keyframes wipe {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fill {
+    from {
+      transform: scaleX(0);
     }
   }
   @keyframes bootline {
@@ -197,6 +226,8 @@ html[data-boot="skip"] .boot-screen {
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Staggered entries would otherwise sit invisible for their delay. */
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
   }
 }

@@ -11,6 +11,7 @@ import { Globe } from "./Globe";
 import { PhotoCarousel } from "./PhotoCarousel";
 
 const pagerButton = "px-2.5 py-1 hover:text-ink";
+const stagger = (s: number) => ({ animationDelay: `${s}s` });
 
 export function TravelExplorer({ trips }: { trips: Trip[] }) {
   // `seq` re-triggers the globe flight even when re-selecting the current trip after a drag.
@@ -76,14 +77,29 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
       </div>
 
       <section aria-live="polite" aria-label={trip.name} className="flex min-w-0 flex-[1_1_260px] flex-col gap-3.5">
-        <PhotoCarousel photos={photos} index={photoIndex[index]} onChange={showPhoto} label={trip.name} />
-        <div className="flex items-baseline justify-between gap-3">
+        <PhotoCarousel
+          photos={photos}
+          index={photoIndex[index]}
+          onChange={showPhoto}
+          label={trip.name}
+          revealKey={index}
+        />
+        {/* Keyed on the trip, not the section: the live region must persist to announce. */}
+        <div
+          key={`title-${index}`}
+          className="flex animate-enter items-baseline justify-between gap-3"
+          style={stagger(0.04)}
+        >
           <h2 className="font-display text-trip-name font-normal text-title">{trip.name}</h2>
           <span className="font-mono text-[11px] tracking-[0.14em] text-ink-muted">
             {pad3(index + 1)} · {trip.status}
           </span>
         </div>
-        <ul className="flex flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]">
+        <ul
+          key={`cities-${index}`}
+          className="flex animate-enter flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]"
+          style={stagger(0.08)}
+        >
           {trip.cities.map((city) => (
             <li
               key={city}
@@ -93,7 +109,13 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
             </li>
           ))}
         </ul>
-        <p className="text-[16px] leading-[1.55] text-pretty text-ink-dim">{trip.note}</p>
+        <p
+          key={`note-${index}`}
+          className="animate-enter text-[16px] leading-[1.55] text-pretty text-ink-dim"
+          style={stagger(0.12)}
+        >
+          {trip.note}
+        </p>
       </section>
     </div>
   );
