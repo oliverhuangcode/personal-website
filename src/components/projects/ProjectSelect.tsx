@@ -15,6 +15,7 @@ const TABS = [
 ] as const;
 
 const chip = "px-3 py-[7px]";
+const stagger = (s: number) => ({ animationDelay: `${s}s` });
 
 /** Character-select style browser: media and detail above a roster strip. */
 export function ProjectSelect({ projects }: { projects: Project[] }) {
@@ -42,16 +43,27 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
           <p className="font-mono text-[11px] tracking-[0.16em] text-ink-muted">
             PROJECT {no} / {total}
           </p>
-          <MediaFrame
-            photo={project.screenshot}
-            sizes="(min-width: 1280px) 600px, (min-width: 700px) 50vw, 100vw"
-            className="chamfer-x aspect-[4/3]"
-          />
+          {/* Keyed on the project so each pick replays the reveal, like a character select. */}
+          <div key={selected} className="animate-wipe">
+            <MediaFrame
+              photo={project.screenshot}
+              sizes="(min-width: 1280px) 600px, (min-width: 700px) 50vw, 100vw"
+              className="chamfer-x aspect-[4/3]"
+            />
+          </div>
         </div>
 
         <div className="flex min-w-0 flex-col gap-[18px]">
-          <p className="font-mono text-[12px] tracking-[0.3em] text-ink">{project.role}</p>
-          <h2 className="font-display text-project-name font-normal text-title">{project.name}</h2>
+          <p key={`role-${selected}`} className="animate-enter font-mono text-[12px] tracking-[0.3em] text-ink">
+            {project.role}
+          </p>
+          <h2
+            key={`name-${selected}`}
+            className="animate-enter font-display text-project-name font-normal text-title"
+            style={stagger(0.04)}
+          >
+            {project.name}
+          </h2>
 
           <div
             role="group"
@@ -82,10 +94,13 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
             aria-live="polite"
             className="flex flex-col gap-3 border-l-2 border-accent bg-panel-glass p-5"
           >
-            <h3 className="font-display text-[24px] leading-none font-normal tracking-[0.08em]">
-              {activeTab.title}
-            </h3>
-            <p className="text-[17px] leading-[1.55] text-pretty text-ink-dim">{activeTab.body(project)}</p>
+            {/* The live region itself must persist for announcements; only its content remounts. */}
+            <div key={`${selected}-${tab}`} className="flex animate-enter flex-col gap-3" style={stagger(0.08)}>
+              <h3 className="font-display text-[24px] leading-none font-normal tracking-[0.08em]">
+                {activeTab.title}
+              </h3>
+              <p className="text-[17px] leading-[1.55] text-pretty text-ink-dim">{activeTab.body(project)}</p>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">

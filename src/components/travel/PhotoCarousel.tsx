@@ -8,23 +8,27 @@ interface PhotoCarouselProps {
   index: number;
   onChange: (index: number) => void;
   label: string;
+  /** Changing this replays the frame's reveal, e.g. on picking another trip. */
+  revealKey?: string | number;
 }
 
 const arrow = "px-2 py-0.5 font-mono text-[12px] text-ink-muted hover:text-ink";
 
 /** One slide per photo. Controls only appear when there is more than one. */
-export function PhotoCarousel({ photos, index, onChange, label }: PhotoCarouselProps) {
+export function PhotoCarousel({ photos, index, onChange, label, revealKey }: PhotoCarouselProps) {
   const count = photos.length;
   const current = count ? Math.min(index, count - 1) : 0;
   const go = (i: number) => onChange((i + count) % count);
 
   return (
     <div className="flex flex-col gap-2.5">
-      <MediaFrame
-        photo={photos[current]}
-        sizes="(min-width: 1280px) 400px, (min-width: 800px) 33vw, 100vw"
-        className="chamfer-x-sm aspect-[4/3]"
-      />
+      <div key={`${revealKey}-${current}`} className="animate-wipe">
+        <MediaFrame
+          photo={photos[current]}
+          sizes="(min-width: 1280px) 400px, (min-width: 800px) 33vw, 100vw"
+          className="chamfer-x-sm aspect-[4/3]"
+        />
+      </div>
       {count > 1 && (
         <div role="group" aria-label={`${label} photos`} className="flex items-center justify-center gap-2">
           <button type="button" aria-label="Previous photo" onClick={() => go(current - 1)} className={arrow}>

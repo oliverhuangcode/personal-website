@@ -13,7 +13,7 @@ export default function FoodPage() {
         <p className="font-mono text-[12px] tracking-[0.2em] text-ink-muted">EATEN AND RATED OUT OF 10</p>
       </header>
       <ul className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,310px),1fr))] gap-3">
-        {dishes.map((dish) => (
+        {dishes.map((dish, i) => (
           <li key={`${dish.name}-${dish.city}`} className="chamfer-tr flex flex-col bg-panel-glass">
             <MediaFrame photo={dish.photo} sizes="(min-width: 1280px) 420px, 100vw" className="aspect-[16/10]" />
             <div className="flex flex-col gap-3 p-[18px]">
@@ -25,7 +25,11 @@ export default function FoodPage() {
                 </span>
               </div>
               <div aria-hidden className="h-2 bg-chip">
-                <div className="h-full bg-score" style={{ width: `${dish.score * 10}%` }} />
+                {/* Meters fill on arrival, staggered down the grid, so the scores read as data. */}
+                <div
+                  className="h-full origin-left animate-fill bg-score"
+                  style={{ width: `${dish.score * 10}%`, animationDelay: `${0.15 + i * 0.05}s` }}
+                />
               </div>
               <p className="font-mono text-[11px] tracking-[0.12em] text-ink-muted">
                 {dish.city} · {dish.type}
