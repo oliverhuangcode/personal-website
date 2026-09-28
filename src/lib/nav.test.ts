@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PAGES, pad2, pad3, pageIndex, stepPage } from "./nav";
+import { PAGES, navDirection, pad2, pad3, pageIndex, stepPage } from "./nav";
 
 describe("nav", () => {
   it("orders pages as in the header: about, projects, home, travel, food", () => {
@@ -19,6 +19,14 @@ describe("nav", () => {
     expect(stepPage("/food", 1).href).toBe("/about");
     expect(stepPage("/about", -1).href).toBe("/food");
     expect(stepPage("/nope", -1).href).toBe("/projects");
+  });
+
+  it("calls rightward jumps forward and leftward ones back", () => {
+    expect(navDirection("/", "/food")).toBe("nav-forward");
+    expect(navDirection("/food", "/about")).toBe("nav-back");
+    expect(navDirection("/travel/", "/projects")).toBe("nav-back");
+    expect(navDirection("/nope", "/about")).toBe("nav-back");
+    expect(navDirection("/nope", "/")).toBe("nav-forward");
   });
 
   it("pads numbers", () => {

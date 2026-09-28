@@ -33,8 +33,11 @@ export const viewport: Viewport = { themeColor: "#08070c" };
  * `?boot` on any URL replays it, for reviewing or screenshotting the intro.
  * It overrides the once-per-session flag but not reduced motion — that one is
  * an accessibility preference, and a query string has no business winning.
+ *
+ * When it does play, the flag flips to "skip" once it has faded (3s), which
+ * zeroes --boot-delay so later entrances don't wait on an overlay that's gone.
  */
-const bootScript = `try{var d=document.documentElement;var f=new URLSearchParams(location.search).has("boot");if((!f&&sessionStorage.getItem("oh:booted"))||matchMedia("(prefers-reduced-motion: reduce)").matches)d.dataset.boot="skip";sessionStorage.setItem("oh:booted","1")}catch(e){}`;
+const bootScript = `try{var d=document.documentElement;var f=new URLSearchParams(location.search).has("boot");if((!f&&sessionStorage.getItem("oh:booted"))||matchMedia("(prefers-reduced-motion: reduce)").matches)d.dataset.boot="skip";else setTimeout(function(){d.dataset.boot="skip"},3e3);sessionStorage.setItem("oh:booted","1")}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

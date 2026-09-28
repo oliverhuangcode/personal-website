@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { startTransition, useMemo, useState, ViewTransition } from "react";
 
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
+import { stagger } from "@/lib/motion";
 import { pad2, pad3 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
@@ -11,7 +12,6 @@ import { Globe } from "./Globe";
 import { PhotoCarousel } from "./PhotoCarousel";
 
 const pagerButton = "px-2.5 py-1 hover:text-ink";
-const stagger = (s: number) => ({ animationDelay: `${s}s` });
 
 export function TravelExplorer({ trips }: { trips: Trip[] }) {
   // `seq` re-triggers the globe flight even when re-selecting the current trip after a drag.
@@ -29,7 +29,7 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
 
   const select = (i: number) => {
     blip("destination");
-    setSelection((s) => ({ index: i, seq: s.seq + 1 }));
+    startTransition(() => setSelection((s) => ({ index: i, seq: s.seq + 1 })));
   };
   const cycle = (step: number) => select((index + step + trips.length) % trips.length);
   const showPhoto = (i: number) => {
@@ -48,13 +48,19 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
                 type="button"
                 aria-pressed={active}
                 onClick={() => select(i)}
-                className={`flex w-full items-center gap-3 px-[15px] py-[13px] text-left transition-colors duration-150 ${
-                  active ? "bg-accent text-bg" : "bg-panel-glass text-ink"
+                className={`relative flex w-full items-center gap-3 bg-panel-glass px-[15px] py-[13px] text-left transition-colors duration-150 ${
+                  active ? "text-bg" : "text-ink"
                 }`}
               >
-                <span className="font-mono text-[11px] opacity-70">{pad3(i + 1)}</span>
-                <span className="font-display text-[24px] leading-none tracking-[0.05em]">{t.name}</span>
-                <span className="ml-auto font-mono text-[10px] tracking-[0.12em] opacity-70">{t.status}</span>
+                {/* Glides to the new row on pick (see `.marker` in globals.css). */}
+                {active && (
+                  <ViewTransition name="trip-row" share="marker" default="none">
+                    <span aria-hidden className="absolute inset-0 bg-accent" />
+                  </ViewTransition>
+                )}
+                <span className="relative font-mono text-[11px] opacity-70">{pad3(i + 1)}</span>
+                <span className="relative font-display text-[24px] leading-none tracking-[0.05em]">{t.name}</span>
+                <span className="relative ml-auto font-mono text-[10px] tracking-[0.12em] opacity-70">{t.status}</span>
               </button>
             </li>
           );

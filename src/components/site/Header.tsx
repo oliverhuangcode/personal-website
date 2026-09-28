@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ViewTransition } from "react";
 
 import { NavLink } from "@/components/ui/NavLink";
 import { PAGES, pageIndex, type NavPage } from "@/lib/nav";
@@ -9,22 +10,26 @@ import { SoundToggle } from "./SoundToggle";
 
 const [about, projects, home, travel, food] = PAGES;
 
-/** Underline with an arrow resting on it and a crossed stem hanging below — marks the current page. */
+/**
+ * Underline with an arrow resting on it and a crossed stem hanging below — marks the current page.
+ * One name across all items, so on navigation it glides to the new page instead of jumping.
+ */
 function SelectedMarker() {
   return (
-    <>
-      <span aria-hidden className="pointer-events-none absolute inset-x-0 -bottom-px h-[2px] bg-accent" />
-      <svg
-        aria-hidden
-        viewBox="0 0 12 20"
-        className="pointer-events-none absolute left-1/2 top-full h-5 w-3 -translate-x-1/2 -translate-y-[7px] fill-accent"
-      >
-        <path d="M6 1 10 6H2Z" />
-        <rect x="5.5" y="6" width="1" height="12" />
-        <rect x="2" y="11" width="8" height="1" />
-        <rect x="3.5" y="14" width="5" height="1" />
-      </svg>
-    </>
+    <ViewTransition name="nav-marker" share="marker" default="none">
+      <span aria-hidden className="pointer-events-none absolute inset-0">
+        <span className="absolute inset-x-0 -bottom-px h-[2px] bg-accent" />
+        <svg
+          viewBox="0 0 12 20"
+          className="absolute left-1/2 top-full h-5 w-3 -translate-x-1/2 -translate-y-[7px] fill-accent"
+        >
+          <path d="M6 1 10 6H2Z" />
+          <rect x="5.5" y="6" width="1" height="12" />
+          <rect x="2" y="11" width="8" height="1" />
+          <rect x="3.5" y="14" width="5" height="1" />
+        </svg>
+      </span>
+    </ViewTransition>
   );
 }
 
@@ -85,7 +90,11 @@ export function Header() {
   const current = PAGES[pageIndex(usePathname())];
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-center gap-[clamp(4px,1.5vw,20px)] border-b border-hairline bg-panel-glass px-2 sm:px-[clamp(56px,7vw,110px)]">
+    // Named so it holds still above the page while pages slide (see globals.css).
+    <header
+      style={{ viewTransitionName: "site-header" }}
+      className="sticky top-0 z-20 flex items-center justify-center gap-[clamp(4px,1.5vw,20px)] border-b border-hairline bg-panel-glass px-2 sm:px-[clamp(56px,7vw,110px)]"
+    >
       <nav aria-label="Primary" className="contents">
         <div className={`${navGroup} justify-end`}>
           <NavItem page={about} active={current === about} />

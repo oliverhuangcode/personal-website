@@ -2,7 +2,7 @@
 
 import {
   useCallback,
-  useEffect,
+  useLayoutEffect,
   useId,
   useMemo,
   useRef,
@@ -59,7 +59,9 @@ export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick, desti
   }, []);
 
   // Fly to the target on selection. Cancels any in-flight tween, and on unmount.
-  useEffect(() => {
+  // A layout effect: selection runs in a view transition, which holds passive
+  // effects until its animations finish, so the globe would sit still ~0.3s.
+  useLayoutEffect(() => {
     const from = centreRef.current;
     const dLon = wrapLonDelta(target.lon - from.lon);
     const dLat = target.lat - from.lat;

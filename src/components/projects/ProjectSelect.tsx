@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useState, ViewTransition } from "react";
 
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Project } from "@/content/types";
+import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
@@ -15,7 +16,15 @@ const TABS = [
 ] as const;
 
 const chip = "px-3 py-[7px]";
-const stagger = (s: number) => ({ animationDelay: `${s}s` });
+
+/** The active tab's fill and the roster bar glide to a new pick (see `.marker` in globals.css). */
+function Highlight({ name, className }: { name: string; className: string }) {
+  return (
+    <ViewTransition name={name} share="marker" default="none">
+      <span aria-hidden className={`absolute ${className}`} />
+    </ViewTransition>
+  );
+}
 
 /** Character-select style browser: media and detail above a roster strip. */
 export function ProjectSelect({ projects }: { projects: Project[] }) {
@@ -29,8 +38,10 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
 
   const pick = (i: number) => {
     blip("project");
-    setSelected(i);
-    setTab(0);
+    startTransition(() => {
+      setSelected(i);
+      setTab(0);
+    });
   };
   const cycle = (step: number) => pick((selected + step + projects.length) % projects.length);
 
@@ -78,13 +89,14 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                 aria-controls="project-detail"
                 onClick={() => {
                   blip("tab");
-                  setTab(i);
+                  startTransition(() => setTab(i));
                 }}
-                className={`flex-1 px-2 py-3 text-center transition-colors duration-150 ${
-                  i === tab ? "bg-accent text-bg" : "bg-panel-raised text-ink"
+                className={`relative flex-1 bg-panel-raised px-2 py-3 text-center transition-colors duration-150 ${
+                  i === tab ? "text-bg" : "text-ink"
                 }`}
               >
-                {t.label}
+                {i === tab && <Highlight name="project-tab" className="inset-0 bg-accent" />}
+                <span className="relative">{t.label}</span>
               </button>
             ))}
           </div>
@@ -127,17 +139,20 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                   onClick={() => pick(i)}
                   aria-pressed={active}
                   aria-label={`${pad2(i + 1)} ${p.name}`}
-                  className="flex w-full flex-col gap-[5px]"
+                  className="group flex w-full flex-col gap-[5px]"
                 >
                   <MediaFrame
                     photo={p.screenshot}
                     sizes="72px"
                     fallback={pad2(i + 1)}
+                    zoom
                     className={`aspect-square w-full outline-2 -outline-offset-2 ${
                       active ? "outline-accent" : "outline-border"
                     }`}
                   />
-                  <span className={`h-[3px] w-full ${active ? "bg-accent" : "bg-border-strong"}`} />
+                  <span className="relative h-[3px] w-full bg-border-strong">
+                    {active && <Highlight name="roster-bar" className="inset-0 bg-accent" />}
+                  </span>
                 </button>
               </li>
             );

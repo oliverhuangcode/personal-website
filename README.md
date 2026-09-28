@@ -121,6 +121,15 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   decelerating curve, no bounce). Key the *children* of an `aria-live` region, never the
   region itself, or screen readers stop announcing. Reduced motion zeroes durations and
   delays alike.
+- **Navigation is spatial.** Pages slide in from the side of the header they sit on
+  (`template.tsx`, React `<ViewTransition>`); `NavLink` and `KeyboardNav` tag each navigation
+  `nav-forward`/`nav-back`. The header and footer are named so they hold still. Selection
+  highlights (nav marker, project tab, roster bar, trip row) share one name per group so they
+  glide to the new pick — local picks therefore go through `startTransition`, which also means
+  the DOM updates a frame or two after the click (tests must wait, not read immediately).
+  View transitions hold `useEffect` until they finish, so anything that must move *during*
+  one (the globe flight, the holo canvas) starts from `useLayoutEffect`. Entrances use
+  `stagger()` from `lib/motion.ts`, which also waits out the boot screen via `--boot-delay`.
 - **Sound** is off by default, never auto-plays, and is persisted in `localStorage`. Each click
   is synthesised in three layers — noise transient, inharmonic FM body, quiet fifth — which is
   what makes it read as a mechanism rather than a beep. `npm run sfx:preview` renders them to

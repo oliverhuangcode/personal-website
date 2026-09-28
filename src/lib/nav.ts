@@ -25,5 +25,14 @@ export function stepPage(pathname: string, step: number): NavPage {
   return PAGES[(((from + step) % n) + n) % n];
 }
 
+export type NavDirection = "nav-forward" | "nav-back";
+
+/** Which way a jump from `fromPath` to `toHref` travels along the header: rightward is forward. */
+export function navDirection(fromPath: string, toHref: string): NavDirection {
+  const home = PAGES.findIndex((p) => p.href === "/");
+  const at = (path: string) => (pageIndex(path) === -1 ? home : pageIndex(path));
+  return at(toHref) < at(fromPath) ? "nav-back" : "nav-forward";
+}
+
 export const pad2 = (n: number) => String(n).padStart(2, "0");
 export const pad3 = (n: number) => String(n).padStart(3, "0");

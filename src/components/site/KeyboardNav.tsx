@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { PAGES, stepPage } from "@/lib/nav";
+import { PAGES, navDirection, stepPage, type NavDirection } from "@/lib/nav";
 import { blip, toggleSound } from "@/lib/sound/sound";
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -22,9 +22,9 @@ export function KeyboardNav() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const go = (href: string) => {
+    const go = (href: string, direction: NavDirection) => {
       blip("nav");
-      router.push(href);
+      router.push(href, { transitionTypes: [direction] });
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -39,13 +39,14 @@ export function KeyboardNav() {
 
       const n = Number(e.key);
       if (Number.isInteger(n) && n >= 1 && n <= PAGES.length) {
-        go(PAGES[n - 1].href);
+        go(PAGES[n - 1].href, navDirection(pathname, PAGES[n - 1].href));
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        go(stepPage(pathname, 1).href);
+        // The key sets the direction, so wrapping from FOOD to ABOUT still slides onward.
+        go(stepPage(pathname, 1).href, "nav-forward");
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        go(stepPage(pathname, -1).href);
+        go(stepPage(pathname, -1).href, "nav-back");
       } else if (e.key.toLowerCase() === "s" && !e.shiftKey) {
         toggleSound();
       }

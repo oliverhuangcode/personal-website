@@ -79,12 +79,18 @@ console.log("marker tap handled without drag:", true);
 // 6. Tabs and roster
 await p.goto(base + "/projects");
 await p.waitForTimeout(400);
+// Picks run in a view transition, so the DOM updates a frame or two after the click.
+const shows = (loc, text) =>
+  loc
+    .filter({ hasText: text })
+    .first()
+    .waitFor({ timeout: 2000 })
+    .then(() => true, () => false);
 await p.getByRole("button", { name: "RESULT" }).click();
-if (!(await p.locator("#project-detail").innerText()).includes("Four orgs")) fail.push("RESULT tab content wrong");
+if (!(await shows(p.locator("#project-detail"), "Four orgs"))) fail.push("RESULT tab content wrong");
 await p.getByRole("button", { name: "05 SIGNAL" }).click();
-const detail = await p.locator("#project-detail").innerText();
-if (!detail.includes("OVERVIEW")) fail.push("selecting a project did not reset to INFO");
-if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("project name did not update");
+if (!(await shows(p.locator("#project-detail"), "OVERVIEW"))) fail.push("selecting a project did not reset to INFO");
+if (!(await shows(p.locator("h2"), "SIGNAL"))) fail.push("project name did not update");
 
 // 7. The boot overlay must not swallow interaction while it plays
 {

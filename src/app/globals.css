@@ -49,7 +49,6 @@
   --text-about-title--line-height: 0.86;
   --text-about-title--letter-spacing: 0.02em;
 
-  --animate-rise: rise 0.35s ease both;
   --animate-pulse: pulse 1.4s ease-in-out infinite;
   /* Selection feedback: fast, decelerating, no overshoot — a HUD snaps, it doesn't bounce. */
   --animate-wipe: wipe 0.26s var(--ease-snap) both;
@@ -83,16 +82,6 @@
     }
   }
 
-  @keyframes rise {
-    from {
-      opacity: 0;
-      transform: translateY(16px);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
   @keyframes pulse {
     0%,
     100% {
@@ -192,6 +181,21 @@
   clip-path: polygon(0 0, 100% 0, calc(100% - var(--home-slant)) 100%, var(--home-slant) 100%);
 }
 
+/* Hover fill that sweeps in left to right. Only a background layer, so it survives chamfers. */
+@utility sweep {
+  background-image: linear-gradient(var(--sweep-color, var(--color-accent)) 0 0);
+  background-repeat: no-repeat;
+  background-size: 0% 100%;
+  transition:
+    background-size 0.25s var(--ease-snap),
+    color 0.15s;
+  &:hover,
+  &:focus-visible {
+    background-size: 100% 100%;
+    color: var(--color-bg);
+  }
+}
+
 /* 1px hairline groups: children filled with panel over a hairline ground. */
 @utility hairline-group {
   display: flex;
@@ -208,6 +212,11 @@
     color-scheme: dark;
     /* No rubber-band bounce: pages that fit the window shouldn't move at all. */
     overscroll-behavior-y: none;
+    /* Entrances wait out the boot screen; the boot script zeroes this once it is gone. */
+    --boot-delay: 2.6s;
+  }
+  html[data-boot="skip"] {
+    --boot-delay: 0s;
   }
   body {
     margin: 0;
@@ -248,7 +257,77 @@ html[data-boot="skip"] .boot-screen {
   display: none;
 }
 
+/* ── View transitions ──────────────────────────────────────────────────── */
+
+/* Pages slide in from the side of the header they sit on; the old one leaves the other way.
+   Exit is quick so it never competes; entry fades in as the exit finishes. */
+::view-transition-old(.nav-forward),
+::view-transition-old(.nav-back) {
+  animation:
+    0.15s ease-in both vt-fade reverse,
+    0.32s var(--ease-snap) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward),
+::view-transition-new(.nav-back) {
+  animation:
+    0.2s ease-out 0.12s both vt-fade,
+    0.32s var(--ease-snap) both vt-slide;
+}
+::view-transition-old(.nav-forward),
+::view-transition-new(.nav-back) {
+  --vt-offset: -40px;
+}
+::view-transition-new(.nav-forward),
+::view-transition-old(.nav-back) {
+  --vt-offset: 40px;
+}
+/* Browser back/forward carries no direction. */
+::view-transition-old(.nav-fade) {
+  animation: 0.15s ease-in both vt-fade reverse;
+}
+::view-transition-new(.nav-fade) {
+  animation: 0.2s ease-out 0.1s both vt-fade;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-slide {
+  from {
+    translate: var(--vt-offset);
+  }
+}
+
+/* Header and footer are the fixed reference: pages slide beneath, they never move. */
+::view-transition-group(site-header),
+::view-transition-group(site-footer) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(site-footer) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(site-footer) {
+  animation: none;
+}
+
+/* Selection highlights glide to the new pick, like a menu cursor. Above the header,
+   since the nav marker lives in it. */
+::view-transition-group(.marker) {
+  animation-duration: 0.28s;
+  animation-timing-function: var(--ease-snap);
+  z-index: 101;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
   .boot-screen {
     display: none;
   }

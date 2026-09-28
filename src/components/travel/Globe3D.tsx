@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type * as THREE from "three";
 
 import { LAND_RINGS } from "@/lib/globe/land";
@@ -270,21 +270,24 @@ export function Globe3D({
     };
   }, [onUnsupported]);
 
+  // Selections run in a view transition, which holds passive effects until its animations
+  // finish, so the globe would sit still for ~0.3s. These run as layout effects instead.
+
   // Re-place the other markers when the list or the selection changes.
-  useEffect(() => {
+  useLayoutEffect(() => {
     destinationsRef.current = destinations;
     indexRef.current = index;
     apiRef.current?.invalidate();
   }, [destinations, index]);
 
   // Follow the selected destination.
-  useEffect(() => {
+  useLayoutEffect(() => {
     targetRef.current = target;
     apiRef.current?.setTarget(target);
   }, [target.lon, target.lat]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fly to it whenever a selection is made. Cancels any in-flight tween, and on unmount.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const from = centreRef.current;
     const dLon = wrapLonDelta(target.lon - from.lon);
     const dLat = target.lat - from.lat;
