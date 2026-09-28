@@ -36,7 +36,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
   return (
     <main className="flex flex-1 flex-col">
       <h1 className="sr-only">Projects</h1>
-      <div className="mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-center gap-grid px-gutter pt-[clamp(20px,3vw,44px)]">
+      <div className="mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-center gap-grid px-gutter pt-[clamp(12px,min(3vw,3dvh),44px)]">
         {/* Capped by window height so the page fits without scrolling on laptop screens. */}
         <div className="flex w-full max-w-[max(240px,calc((100dvh-350px)*4/3))] min-w-0 flex-col gap-2.5 justify-self-center">
           <p className="font-mono text-[11px] tracking-[0.16em] text-ink-muted">
@@ -98,7 +98,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
 
       <nav
         aria-label="Project roster"
-        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter py-[clamp(12px,min(2.5vw,3dvh),28px)]"
+        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter py-[clamp(8px,min(2.5vw,2dvh),28px)]"
       >
         <div className="h-px bg-[linear-gradient(90deg,transparent,#2e2b38_20%,#2e2b38_80%,transparent)]" />
         {/* safe-center keeps the first thumbnail reachable when the row overflows. */}
