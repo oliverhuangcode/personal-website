@@ -26,7 +26,8 @@
   --color-transparent: transparent;
 
   --spacing-gutter: clamp(14px, 2.5vw, 36px);
-  --spacing-section: clamp(18px, 3vw, 40px);
+  /* Vertical page padding: also shrinks on short windows so pages that fit don't scroll. */
+  --spacing-section: clamp(18px, min(3vw, 4dvh), 40px);
   --spacing-grid: clamp(18px, 3vw, 36px);
 
   --text-hero: clamp(68px, 13vw, 190px);
@@ -145,6 +146,8 @@
   html {
     background: var(--color-bg);
     color-scheme: dark;
+    /* No rubber-band bounce: pages that fit the window shouldn't move at all. */
+    overscroll-behavior-y: none;
   }
   body {
     margin: 0;
