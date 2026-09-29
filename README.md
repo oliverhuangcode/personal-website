@@ -74,14 +74,20 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   The marker's click target is a real `<button>` laid over the canvas and repositioned each
   frame, so it is keyboard-reachable; it is hidden while the marker is on the far side. The
   coastline data is Natural Earth 1:110m (public domain) via `world-atlas`.
-- **The home spike** is built from the part list in `lib/holo/spike.ts`. The 3D scene turns each
-  part into a bevelled mesh (`lib/holo/bevel.ts`, unit tested): filleted corners, bevelled caps and
-  normals smoothed only across the rounding, so edges catch a highlight instead of reading as
-  low-poly. The armour is lacquered gunmetal (`MeshPhysicalMaterial` with clearcoat) lit by a studio
-  environment map, with ACES filmic tone mapping, soft shadows and a contact shadow. The glow column
-  is a fresnel energy shader with a white-hot filament, and bloom (strength following the charge
-  cycle) does the glow rather than faked wide strokes. The flat canvas version still draws the
-  same parts with hard edges.
+- **The home spike** is a detailed Three.js model in the spirit of Valorant's Spike
+  (`lib/holo/model.ts`, unit tested): a three-tier armoured base with plates, vents, bolts and a
+  row of light cells; three claws with twin pistons; a glass chamber around an energy core with
+  rising energy rings, a helix and a hot filament; a segmented casing ring that rides up as it
+  charges; braced struts with glowing channels; cables; and a crown with horns and an emitter.
+  Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. Materials are
+  lacquered gunmetal with a world-space wear pattern in the roughness, machined trim and matte
+  polymer, lit by a studio environment map with ACES tone mapping, soft shadows and bloom.
+  **Motion:** the charge cycle drives everything. The heartbeat quickens as it arms and the light
+  cells chase on each beat; arcs of light whip round the core and motes rise off it; a floor HUD
+  ring turns. A **shockwave** (floor ring plus expanding shell) fires at the peak, on a click, and
+  on a hard scroll-spin, throttled so they can't stack. Bloom is scaled to the spike's on-screen
+  size so the peak can't wash out the name on phones. The flat canvas fallback still draws the
+  simpler part list in `lib/holo/spike.ts`.
 - **Both scenes fall back to the earlier flat drawings** (`HoloCore2D`, `Globe2D`) if WebGL or
   the Three.js chunk is unavailable, rather than going blank. The e2e suite checks this by
   launching with WebGL disabled. Delete the 2D files if you would rather not maintain them.
