@@ -2,12 +2,12 @@ import type { LonLatPoint } from "./globe-types";
 
 // Markers follow the "1D Ping" spec in the Map Icons design file. Its geometry is in
 // design units, drawn inside a group turned 45°; SCALE maps one unit to CSS px.
-const SCALE = 1.3;
+const SCALE = 1;
 
 /** Selected marker box in CSS px (40 design units); also its hit target. Centred on the destination. */
 export const MARKER_PX = 40 * SCALE;
 /** Hit target for the other destinations' markers, in CSS px. */
-export const DOT_PX = 28;
+export const DOT_PX = 24;
 
 const fmt = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}°${v >= 0 ? pos : neg}`;
 
@@ -20,9 +20,9 @@ const box = (px: number) => {
 /** Square with half-side `h`, centred on the origin. */
 const square = (h: number) => ({ x: -h, y: -h, width: h * 2, height: h * 2 });
 
-/** A radar ring: a square outline growing from half-side 4 to 16 while fading out. */
+/** A radar ring: a square outline growing from half-side 4 to 16 while fading out. Slower than the spec's 1.4s. */
 function Ring({ begin }: { begin: string }) {
-  const anim = { dur: "1.4s", begin, repeatCount: "indefinite" };
+  const anim = { dur: "2.2s", begin, repeatCount: "indefinite" };
   return (
     <rect {...square(4)} fill="none" stroke="currentColor" strokeWidth={0.8} opacity={0}>
       <animate attributeName="x" values="-4;-16" {...anim} />
@@ -46,13 +46,11 @@ function Ring({ begin }: { begin: string }) {
 export function TargetReticle({
   target,
   label,
-  index,
   lockKey,
   flip,
 }: {
   target: LonLatPoint;
   label: string;
-  index: number;
   lockKey: number;
   flip: boolean;
 }) {
@@ -67,7 +65,7 @@ export function TargetReticle({
           {/* SMIL ignores prefers-reduced-motion, so the rings are simply not drawn there. */}
           <g className="motion-reduce:hidden">
             <Ring begin="0s" />
-            <Ring begin="0.7s" />
+            <Ring begin="1.1s" />
           </g>
           <rect {...square(3.5)} fill="currentColor" className="origin-center animate-pop [transform-box:fill-box]" />
         </g>
@@ -79,7 +77,7 @@ export function TargetReticle({
       >
         <span
           className={`flex flex-col gap-[3px] border-accent bg-bg/85 px-2 py-[5px] font-mono text-[9px] leading-none tracking-[0.12em] whitespace-nowrap ${
-            flip ? "items-end border-r" : "border-l"
+            flip ? "items-end border-r" : "items-start border-l"
           }`}
           style={{
             clipPath: flip
@@ -87,9 +85,7 @@ export function TargetReticle({
               : "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)",
           }}
         >
-          <span className="text-ink">
-            <span className="text-accent">TGT-{String(index + 1).padStart(3, "0")}</span> · {label.toUpperCase()}
-          </span>
+          <span className="text-ink">{label.toUpperCase()}</span>
           <span className="text-ink-muted tabular-nums">
             {fmt(target.lat, "N", "S")} {fmt(target.lon, "E", "W")}
           </span>
@@ -101,7 +97,7 @@ export function TargetReticle({
 
 /**
  * An unselected destination, per the Ping spec: a light diamond in a dark square frame if
- * visited, a dashed outline if planned. Decorative; it sits inside the button that
+ * visited, a dotted diamond if planned. Decorative; it sits inside the button that
  * selects that destination.
  */
 export function DestinationMarker({ visited }: { visited: boolean }) {
@@ -115,9 +111,11 @@ export function DestinationMarker({ visited }: { visited: boolean }) {
           </>
         ) : (
           <rect
-            {...square(3.5)}
+            {...square(4)}
             fill="none"
-            strokeDasharray="2 2"
+            strokeWidth={1.3}
+            strokeLinecap="round"
+            strokeDasharray="0 2"
             className="stroke-ink-muted group-hover:stroke-accent-hover"
           />
         )}
