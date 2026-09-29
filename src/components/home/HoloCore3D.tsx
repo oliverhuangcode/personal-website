@@ -261,13 +261,13 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = envTex;
       // Low: a matte, stylised finish wants soft fill, not mirror reflections.
-      scene.environmentIntensity = 0.07;
+      scene.environmentIntensity = 0.03;
 
       // ── The device ────────────────────────────────────────────────────
       const model = buildSpikeModel();
       group.add(model.group);
 
-      const key = new T.DirectionalLight(0xf2eeff, 2.6);
+      const key = new T.DirectionalLight(0xf2eeff, 1.1);
       key.position.set(-2.25, 4, 2.75);
       key.castShadow = true;
       key.shadow.mapSize.set(1024, 1024);
@@ -279,9 +279,9 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       key.shadow.normalBias = 0.02;
       key.shadow.radius = 4;
       // Accent rim from behind, so the silhouette separates from the dark page.
-      const rimLight = new T.DirectionalLight(ACC_HEX, 1.5);
+      const rimLight = new T.DirectionalLight(ACC_HEX, 0.3);
       rimLight.position.set(3, 1.5, -3);
-      scene.add(key, rimLight, new T.HemisphereLight(0x9a94b8, 0x100e18, 0.45));
+      scene.add(key, rimLight, new T.HemisphereLight(0x7a7690, 0x0c0a12, 0.22));
 
       // Soft contact shadow where the plinth meets the floor: what makes it sit, not float.
       const contactTex = glowTexture(T, [

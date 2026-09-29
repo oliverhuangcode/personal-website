@@ -34,9 +34,12 @@ export function glowFor(shown: number): number {
   return 0.18 + shown * 0.82;
 }
 
-/** Tone-mapping exposure: the whole scene sits darker behind the name until you spin it. */
+/**
+ * Tone-mapping exposure: barely moves. Spinning brightens the core, its glow and the sparks,
+ * not the outer shell, which stays dark because the light is inside it.
+ */
 export function exposureFor(shown: number): number {
-  return 0.55 + shown * 0.55;
+  return 0.5 + shown * 0.12;
 }
 
 /** Clusters of 2–4 sparks per second: none at rest, more often as it winds up. */

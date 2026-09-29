@@ -180,14 +180,15 @@ export function buildSpikeModel(): SpikeModel {
   // silhouette the way game art separates a hero object from its background.
   const armour = mat(
     new THREE.MeshStandardMaterial({
-      color: 0x36333f,
+      color: 0x1e1c25,
       metalness: 0.12,
       roughness: 0.92,
       emissive: ACC,
       emissiveIntensity: 0,
     }),
   );
-  const rim = { value: 0.2 };
+  // Kept very faint: the light lives inside the core, so the outer shell barely catches it.
+  const rim = { value: 0.03 };
   armour.onBeforeCompile = (shader) => {
     shader.uniforms.uRim = rim;
     shader.vertexShader = shader.vertexShader
@@ -220,7 +221,7 @@ export function buildSpikeModel(): SpikeModel {
       );
   };
   // Trim for brackets, pistons, bands and bolts: lighter than the armour, but just as matte.
-  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x6f6b80, metalness: 0.2, roughness: 0.85 }));
+  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x3f3c4c, metalness: 0.2, roughness: 0.85 }));
   // Matte black polymer for cables, vents and pads.
   const polymer = mat(new THREE.MeshStandardMaterial({ color: 0x111016, metalness: 0.1, roughness: 0.72 }));
   // Emissive trims are not tone mapped, so they stay saturated and bloom like a game's light strips.
@@ -507,7 +508,9 @@ export function buildSpikeModel(): SpikeModel {
 
   // Light spilling from the core onto the struts, clamp and the cap's underside.
   const coreLights = [-0.2, 0.55].map((y) => {
-    const l = new THREE.PointLight(ACC, 0, 2.6, 1.8);
+    // Short range and a steep falloff: the core lights the glass, the inner faces of the struts
+    // and the clamp right beside it, and fades out before it reaches the outer shell.
+    const l = new THREE.PointLight(ACC, 0, 0.9, 2.2);
     l.position.set(0, y, 0);
     group.add(l);
     return l;
@@ -521,7 +524,7 @@ export function buildSpikeModel(): SpikeModel {
       hotCol.copy(ACC).lerp(HOT, glow * 0.35);
 
       armour.emissiveIntensity = glow * 0.01;
-      rim.value = 0.15 + glow * 0.45;
+      rim.value = 0.02 + glow * 0.04;
       coreMat.uniforms.uTime.value = t;
       coreMat.uniforms.uCharge.value = glow;
       glassMat.uniforms.uGlow.value = glow;
@@ -531,7 +534,7 @@ export function buildSpikeModel(): SpikeModel {
       underglowMat.color.copy(hotCol).multiplyScalar(0.25 + glow * 0.35);
       channelMat.color.copy(hotCol).multiplyScalar(0.3 + glow * 0.4);
       for (const m of cellMats) m.color.copy(hotCol).multiplyScalar(0.3 + glow * 0.4);
-      for (const l of coreLights) l.intensity = 0.15 + glow * 1.4;
+      for (const l of coreLights) l.intensity = 0.1 + glow * 0.9;
 
       // Energy rings climb the core at a steady pace and fade in and out at the ends.
       const span = CH_TOP - CH_BOT - 0.12;
