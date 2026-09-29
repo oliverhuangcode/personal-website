@@ -98,6 +98,30 @@ const MOTE_FRAG = /* glsl */ `
   }
 `;
 
+/**
+ * Resolves once the boot intro has finished, or at once if it isn't playing. Building the
+ * scene compiles shaders, which can hold the main thread; the intro covers the spike anyway,
+ * so waiting costs nothing visible and keeps the intro smooth.
+ */
+function afterIntro(): Promise<void> {
+  const boot = document.querySelector<HTMLElement>(".boot-screen");
+  const playing = boot && document.documentElement.dataset.boot !== "skip" && getComputedStyle(boot).display !== "none";
+  if (!playing) return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      boot.removeEventListener("animationend", onEnd);
+      clearTimeout(timer);
+      resolve();
+    };
+    const onEnd = (e: AnimationEvent) => {
+      if (e.target === boot) done();
+    };
+    boot.addEventListener("animationend", onEnd);
+    // Backstop in case the animation event never arrives (tab hidden, styles changed).
+    const timer = setTimeout(done, 3200);
+  });
+}
+
 /** Everything besides Three.js core that the scene needs, fetched in parallel with it. */
 async function loadExtras() {
   const [composer, render, bloom, output, room, model] = await Promise.all([
@@ -147,7 +171,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       let renderer: THREE.WebGLRenderer;
       let mods: Awaited<ReturnType<typeof loadExtras>>;
       try {
-        [T, mods] = await Promise.all([import("three"), loadExtras()]);
+        [T, mods] = await Promise.all([import("three"), loadExtras(), afterIntro()]);
         if (cancelled) return;
         renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
       } catch {
@@ -507,6 +531,23 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         composer.render();
       };
 
+      // Compile every shader before the first frame. Where the browser supports parallel
+      // compilation this happens off the main thread instead of freezing the page for a beat.
+      try {
+        await renderer.compileAsync(scene, camera);
+      } catch {
+        // Older drivers: the first render compiles synchronously instead.
+      }
+      if (cancelled) {
+        model.dispose();
+        shockwaves.dispose();
+        renderer.dispose();
+        return;
+      }
+
+      // Fade in once there is something to show, rather than popping in mid-page.
+      requestAnimationFrame(() => (canvas.dataset.ready = ""));
+
       // Reduced motion: one still frame, redrawn only when the canvas resizes.
       if (reduced) {
         const ro = new ResizeObserver(() => {
@@ -583,5 +624,11 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
     };
   }, [onUnsupported]);
 
-  return <canvas ref={canvasRef} aria-hidden className="absolute inset-0 block size-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      aria-hidden
+      className="absolute inset-0 block size-full opacity-0 transition-opacity duration-500 ease-out data-ready:opacity-100"
+    />
+  );
 }

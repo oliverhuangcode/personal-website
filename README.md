@@ -88,6 +88,10 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   on a hard scroll-spin, throttled so they can't stack. Bloom is scaled to the spike's on-screen
   size so the peak can't wash out the name on phones. The flat canvas fallback still draws the
   simpler part list in `lib/holo/spike.ts`.
+  **Startup:** on a first visit the scene is built only after the boot intro ends, and shaders
+  are compiled with `compileAsync` before the first frame, then the canvas fades in. Building it
+  during the intro froze the main thread and stuttered the intro. Keep heavy scene work out of
+  that window.
 - **Both scenes fall back to the earlier flat drawings** (`HoloCore2D`, `Globe2D`) if WebGL or
   the Three.js chunk is unavailable, rather than going blank. The e2e suite checks this by
   launching with WebGL disabled. Delete the 2D files if you would rather not maintain them.

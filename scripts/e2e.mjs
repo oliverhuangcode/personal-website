@@ -205,9 +205,14 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
 {
   const hp = await (await b.newContext({ viewport: { width: 1360, height: 880 } })).newPage();
   await hp.goto(base + "/");
-  await hp.waitForTimeout(3600);
+  // The scene starts after the boot intro and fades in once its shaders are compiled.
   const canvas = hp.locator("canvas[data-renderer]");
-  if ((await canvas.count()) !== 1) fail.push("home spike did not start a WebGL canvas");
+  const ready = await hp
+    .waitForSelector("canvas[data-ready]", { timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  await hp.waitForTimeout(700);
+  if (!ready || (await canvas.count()) !== 1) fail.push("home spike did not start a WebGL canvas");
   else {
     const shot = () => canvas.screenshot({ type: "png" });
     const a = await shot();
