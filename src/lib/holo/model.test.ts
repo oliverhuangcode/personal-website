@@ -21,13 +21,17 @@ describe("buildSpikeModel", () => {
     const box = bounds(group.getObjectByName("plinth")!.parent!);
     expect(box.min.y).toBeGreaterThan(-1.1);
     expect(box.max.y).toBeLessThan(1.4);
-    // The floor HUD is the widest thing; the device itself stays within its old footprint.
+    // The device stays within its old footprint.
     const device = new THREE.Box3();
     group.traverse((o) => {
-      if (o instanceof THREE.Mesh && o.name !== "floor hud") device.expandByObject(o);
+      if (o instanceof THREE.Mesh) device.expandByObject(o);
     });
     expect(device.max.x).toBeLessThan(1.15);
     expect(device.min.x).toBeGreaterThan(-1.15);
+  });
+
+  it("has no floor ring", () => {
+    expect(buildSpikeModel().group.getObjectByName("floor hud")).toBeUndefined();
   });
 
   it("is three-way symmetric: three of every corner part", () => {

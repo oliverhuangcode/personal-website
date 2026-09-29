@@ -6,7 +6,9 @@ export default function HomePage() {
   const [first, last] = site.name.toUpperCase().split(" ");
 
   return (
-    <main className="relative isolate flex flex-1 flex-col items-center justify-center overflow-hidden px-[clamp(16px,3vw,40px)] py-[clamp(40px,8dvh,90px)] text-center">
+    // Not selectable: scrolling and swiping here spin the spike, and a stray drag shouldn't
+    // paint a selection over the name.
+    <main className="relative isolate flex flex-1 flex-col items-center justify-center overflow-hidden px-[clamp(16px,3vw,40px)] py-[clamp(40px,8dvh,90px)] text-center select-none">
       <HoloCore />
       <div className="relative z-10 flex w-full flex-col items-center gap-[26px]">
         <p className="font-mono text-[clamp(11px,1.3vw,13px)] tracking-[0.34em] text-ink">{site.title}</p>

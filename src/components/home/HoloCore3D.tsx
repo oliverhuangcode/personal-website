@@ -3,15 +3,17 @@
 import { useEffect, useRef } from "react";
 import type * as THREE from "three";
 
+import { addSpin, arcRate, decay, exposureFor, follow, glowFor, sparkRate } from "@/lib/holo/energy";
+
 // Colour channels mirror the tokens in globals.css: accent #b987ff, bg #08070c.
 const ACC_HEX = 0xb987ff;
 const ACC_RGB = "185,135,255";
 const FOV = 38;
 const MAX_DPR = 2;
-const POOL_MOTES = 160;
-/** Steady brightness of the device's lights, 0–1. Held constant: no heartbeat, no flare. */
-const GLOW = 0.5;
-const ARC_SEGMENTS = 40;
+const POOL_SPARKS = 220;
+const ARC_POOL = 10;
+const ARC_SEGMENTS = 32;
+const TAU = Math.PI * 2;
 /**
  * Arc ribbon layers, widest and faintest first: [width in px at S = 130, alpha, tint].
  * Bloom supplies the wide, soft falloff, so only the body and hot core are drawn.
@@ -25,16 +27,49 @@ const ARC_LAYERS = [
 const TINT = { acc: [185, 135, 255], mid: [236, 220, 255], hot: [255, 250, 255] } as const;
 
 /**
- * Arcs of light that revolve around the spike on tilted orbits, each a bright head with a
- * fading tail. Radii and heights keep them clear of the claws, horns and cables.
- * `speed` is rad/s (sign is direction); `span` is the tail length in radians.
+ * A crackle of light around the device: it snaps into being at a random height and radius, on
+ * a random tilt, whips round in either direction for a fraction of a second, and dies. Its path
+ * jitters and its brightness flickers, so a burst of them reads as energy, not an orbit.
  */
-const ARCS = [
-  { r: 0.84, y: 0.15, tilt: 0.3, node: 0.0, speed: 0.9, span: 2.4, phase: 0.0 },
-  { r: 0.98, y: -0.28, tilt: -0.2, node: 2.1, speed: -0.65, span: 2.0, phase: 2.4 },
-  { r: 0.76, y: 0.52, tilt: 0.18, node: 4.2, speed: 1.15, span: 1.7, phase: 4.1 },
-  { r: 1.04, y: -0.6, tilt: 0.1, node: 1.0, speed: -0.5, span: 2.8, phase: 1.3 },
-] as const;
+interface Arc {
+  live: boolean;
+  r: number;
+  y: number;
+  tilt: number;
+  node: number;
+  /** Head angle, radians. */
+  a: number;
+  /** Angular speed, rad/s; the sign is the direction of travel. */
+  w: number;
+  span: number;
+  life: number;
+  max: number;
+  seed: number;
+  amp: number;
+}
+
+function newArc(): Arc {
+  return {
+    live: true,
+    r: 0.62 + Math.random() * 0.42,
+    y: -0.65 + Math.random() * 1.35,
+    tilt: (Math.random() - 0.5) * 1.1,
+    node: Math.random() * TAU,
+    a: Math.random() * TAU,
+    w: (Math.random() < 0.5 ? -1 : 1) * (2.5 + Math.random() * 6.5),
+    span: 0.5 + Math.random() * 1.8,
+    life: 0,
+    max: 0.18 + Math.random() * 0.55,
+    seed: Math.random() * 1000,
+    amp: 0.6 + Math.random() * 0.5,
+  };
+}
+
+/** Cheap deterministic noise in [0, 1). */
+const hash = (x: number) => {
+  const v = Math.sin(x * 127.1) * 43758.5453;
+  return v - Math.floor(v);
+};
 
 /** How many to spawn this frame when `expected` are due on average. */
 function spawnCount(expected: number): number {
@@ -127,10 +162,11 @@ interface HoloCore3DProps {
 }
 
 /**
- * The home page's holographic spike as a real 3D scene: a detailed, softly lit device
- * with arcs of light revolving around it and motes drifting off the core. The glow is
- * steady. The wheel spins it and the pointer tilts the camera. Under reduced motion it
- * renders one still frame.
+ * The home page's holographic spike as a real 3D scene: a detailed device that rests as a
+ * dim silhouette behind the name. Scrolling (or swiping) spins it and winds it up: it slowly
+ * brightens, throws sparks off its core, and arcs of light start crackling around it; stop and
+ * it runs back down. The pointer tilts the camera. Under reduced motion it renders one still
+ * frame at rest.
  *
  * Three.js is imported on demand so it stays out of the page's first paint.
  */
@@ -162,7 +198,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       renderer.setClearColor(0x000000, 0);
       // Filmic response so highlights roll off instead of clipping, like a game engine's.
       renderer.toneMapping = T.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.toneMappingExposure = exposureFor(0);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = T.PCFShadowMap;
       canvas.dataset.renderer = "webgl";
@@ -260,23 +296,25 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         depthWrite: false,
         side: T.DoubleSide,
       });
-      const ribbons = ARCS.map(() => {
+      const arcs: Arc[] = Array.from({ length: ARC_POOL }, () => ({ ...newArc(), live: false }));
+      const ribbons = arcs.map(() => {
         const geo = new T.BufferGeometry();
         geo.setAttribute("position", new T.BufferAttribute(new Float32Array(L * rowVerts * 3), 3));
         geo.setAttribute("color", new T.BufferAttribute(new Float32Array(L * rowVerts * 4), 4));
         geo.setIndex(ribbonIndex);
         const m = new T.Mesh(geo, ribbonMat);
         m.frustumCulled = false;
+        m.visible = false;
         m.renderOrder = 3;
         group.add(m);
         return m;
       });
 
       // ── Motes ─────────────────────────────────────────────────────────
-      const mPos = new Float32Array(POOL_MOTES * 3);
-      const mSize = new Float32Array(POOL_MOTES);
-      const mAlpha = new Float32Array(POOL_MOTES);
-      const motes = Array.from({ length: POOL_MOTES }, () => ({ live: false, vx: 0, vy: 0, vz: 0, life: 0, max: 1, r: 1 }));
+      const mPos = new Float32Array(POOL_SPARKS * 3);
+      const mSize = new Float32Array(POOL_SPARKS);
+      const mAlpha = new Float32Array(POOL_SPARKS);
+      const motes = Array.from({ length: POOL_SPARKS }, () => ({ live: false, vx: 0, vy: 0, vz: 0, life: 0, max: 1, r: 1 }));
       const moteGeo = new T.BufferGeometry();
       moteGeo.setAttribute("position", new T.BufferAttribute(mPos, 3));
       moteGeo.setAttribute("aSize", new T.BufferAttribute(mSize, 1));
@@ -304,6 +342,11 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       // ── State ─────────────────────────────────────────────────────────
       let spin = 0.35;
       let boost = 0;
+      /** Spin energy (see lib/holo/energy): what scrolling winds up, and what's shown of it. */
+      let energy = 0;
+      let shown = 0;
+      let lastReport = 0;
+      let touchY: number | null = null;
       let tiltX = 0;
       let tiltY = 0;
       let mouseX = 0;
@@ -360,43 +403,71 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         group.rotation.y = spin + tiltY;
         group.updateMatrixWorld(true);
 
-        // Steady light: the device, bloom and haze hold one level; only mechanical parts move.
-        model.update({ t, dt: reduced ? 0 : dt, glow: GLOW });
+        if (!reduced) {
+          energy = decay(energy, dt);
+          shown = follow(shown, energy, dt);
+        }
+        // Published for tests and debugging, a few times a second rather than every frame.
+        if (now - lastReport > 250) {
+          canvas.dataset.energy = Math.max(0, shown).toFixed(2);
+          lastReport = now;
+        }
+        model.update({ t, dt: reduced ? 0 : dt, glow: glowFor(shown) });
+        renderer.toneMappingExposure = exposureFor(shown);
         // Bloom blurs in screen pixels, so on a small canvas the same glow covers far more of the
         // object and the page. Scale it with the device's on-screen size.
         const bloomK = Math.min(1, Math.max(0.45, S / 160));
-        bloom.strength = 0.32 * bloomK;
+        bloom.strength = (0.2 + shown * 0.45) * bloomK;
         bloom.radius = 0.28 * bloomK;
-        haze.material.opacity = 0.012;
+        haze.material.opacity = 0.006 + shown * 0.03;
         haze.scale.set(6.4, 6.4, 1);
-        poolMat.opacity = 0.05;
+        poolMat.opacity = 0.02 + shown * 0.08;
 
         // Camera position in the group's frame, for billboarding the ribbons.
         camPos.copy(camera.position);
         group.worldToLocal(camPos);
 
-        // Arcs of light revolving around the spike: a bright head and a fading tail on a tilted
-        // orbit. Built as camera-facing ribbons so they stay the same width from any angle, and
-        // depth-tested so they pass behind the device.
-        ARCS.forEach((arc, ai) => {
+        // Arcs crackle into being only once it's spinning, more often the more it's wound up.
+        if (!reduced) {
+          for (let i = spawnCount(arcRate(shown) * dt); i > 0; i--) {
+            const free = arcs.findIndex((a) => !a.live);
+            if (free < 0) break;
+            arcs[free] = newArc();
+          }
+        }
+        // Each is a camera-facing ribbon (same width from any angle), depth-tested so it passes
+        // behind the device, on a jittering path with a flickering brightness.
+        const tick = Math.floor(t * 30);
+        arcs.forEach((arc, ai) => {
           const mesh = ribbons[ai];
-          const head = arc.phase + arc.speed * t;
-          const dir = Math.sign(arc.speed);
+          if (arc.live && !reduced) {
+            arc.life += dt;
+            arc.a += arc.w * dt;
+            if (arc.life >= arc.max) arc.live = false;
+          }
+          mesh.visible = arc.live;
+          if (!arc.live) return;
+
+          const env = Math.sin((arc.life / arc.max) * Math.PI);
+          const flicker = 0.55 + 0.45 * hash(arc.seed + tick);
+          const inten = env * flicker * arc.amp * (0.55 + shown * 0.6);
+          const dir = Math.sign(arc.w);
           const pos = mesh.geometry.getAttribute("position") as THREE.BufferAttribute;
           const col = mesh.geometry.getAttribute("color") as THREE.BufferAttribute;
           const cl: number[] = [];
           for (let k = 0; k <= ARC_SEGMENTS; k++) {
             const u = k / ARC_SEGMENTS;
-            const ang = head - dir * u * arc.span;
-            // A faint shimmer in radius keeps the line from reading as a rigid wire.
-            const rr = arc.r + Math.sin(u * 7 + ai * 1.7 + t * 3) * 0.008;
-            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr;
+            const ang = arc.a - dir * u * arc.span;
+            // Jagged, re-rolled 30 times a second, so the arc crackles rather than glides.
+            const jag = (hash(arc.seed + k * 7.3 + tick) - 0.5) * 0.07;
+            const rr = arc.r + jag;
+            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr + (hash(arc.seed + k * 3.1 + tick * 1.7) - 0.5) * 0.05;
             cl.push(Math.cos(ang) * rr, yy, Math.sin(ang) * rr);
           }
           for (let k = 0; k <= ARC_SEGMENTS; k++) {
             const u = k / ARC_SEGMENTS;
-            // Rounded head, long soft tail.
-            const shape = Math.min(1, u * 14) * Math.pow(1 - u, 1.6);
+            // Rounded head, soft tail.
+            const shape = Math.min(1, u * 10) * Math.pow(1 - u, 1.4);
             const a = Math.max(0, k - 1) * 3;
             const b = Math.min(ARC_SEGMENTS, k + 1) * 3;
             tmpA.set(cl[b] - cl[a], cl[b + 1] - cl[a + 1], cl[b + 2] - cl[a + 2]); // tangent
@@ -410,7 +481,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
               pos.setXYZ(v, tmpB.x + side.x * half, tmpB.y + side.y * half, tmpB.z + side.z * half);
               pos.setXYZ(v + 1, tmpB.x - side.x * half, tmpB.y - side.y * half, tmpB.z - side.z * half);
               const [r, g, bl] = TINT[tint];
-              const alpha = al * shape * 0.8;
+              const alpha = al * shape * inten;
               col.setXYZW(v, r / 255, g / 255, bl / 255, alpha);
               col.setXYZW(v + 1, r / 255, g / 255, bl / 255, alpha);
             }
@@ -418,23 +489,25 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           pos.needsUpdate = col.needsUpdate = true;
         });
 
-        // Motes drift up off the core at a slow, steady rate.
+        // Sparks fly out from the core, thicker the more it's wound up.
         if (!reduced) {
-          for (let i = spawnCount(4 * dt); i > 0; i--) {
+          for (let i = spawnCount(sparkRate(shown) * dt); i > 0; i--) {
             const free = motes.findIndex((m) => !m.live);
             if (free < 0) break;
-            const ang = Math.random() * Math.PI * 2;
-            const r = 0.2 + Math.random() * 0.5;
-            tmpA.set(Math.cos(ang) * r, 0.6 - Math.random() * 1.3, Math.sin(ang) * r).applyMatrix4(group.matrixWorld);
+            const ang = Math.random() * TAU;
+            tmpA.set(Math.cos(ang) * 0.1, -0.4 + Math.random() * 1.2, Math.sin(ang) * 0.1).applyMatrix4(group.matrixWorld);
             mPos.set([tmpA.x, tmpA.y, tmpA.z], free * 3);
+            // Outward from the axis, in world space, with a little lift.
+            const speed = 0.7 + Math.random() * 1.3;
+            tmpB.set(Math.cos(ang) * speed, -0.1 + Math.random() * 0.6, Math.sin(ang) * speed).applyQuaternion(group.quaternion);
             Object.assign(motes[free], {
               live: true,
-              vx: (Math.random() - 0.5) * 0.08,
-              vy: 0.07 + Math.random() * 0.2,
-              vz: (Math.random() - 0.5) * 0.08,
+              vx: tmpB.x,
+              vy: tmpB.y,
+              vz: tmpB.z,
               life: 0,
-              max: 1.2 + Math.random() * 1.6,
-              r: 1 + Math.random() * 2.2,
+              max: 0.4 + Math.random() * 0.7,
+              r: 1.1 + Math.random() * 1.4,
             });
             mSize[free] = motes[free].r * 6;
           }
@@ -449,11 +522,15 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
               mAlpha[i] = 0;
               return;
             }
-            m.vx += (Math.random() - 0.5) * 0.04 * dt * 60 * 0.1;
+            // Air drag and a touch of gravity, so sparks arc and slow rather than fly straight.
+            const drag = Math.max(0, 1 - dt * 1.4);
+            m.vx *= drag;
+            m.vz *= drag;
+            m.vy = m.vy * drag - 0.5 * dt;
             mPos[i * 3] += m.vx * dt;
             mPos[i * 3 + 1] += m.vy * dt;
             mPos[i * 3 + 2] += m.vz * dt;
-            mAlpha[i] = Math.sin((m.life / m.max) * Math.PI) * 0.55;
+            mAlpha[i] = Math.pow(1 - m.life / m.max, 1.5) * 0.9;
           });
           moteGeo.getAttribute("position").needsUpdate = true;
           moteGeo.getAttribute("aSize").needsUpdate = true;
@@ -504,6 +581,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const onVisibility = () => (document.hidden ? cancelAnimationFrame(raf) : start());
       const onWheel = (e: WheelEvent) => {
         boost = Math.max(-0.12, Math.min(0.12, boost + e.deltaY * 0.0006));
+        energy = addSpin(energy, e.deltaY);
       };
       const onPointerMove = (e: PointerEvent) => {
         mouseX = e.clientX / window.innerWidth - 0.5;
@@ -512,7 +590,21 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const ro = new ResizeObserver(() => resize());
       ro.observe(canvas);
 
+      // Phones have no wheel: a vertical swipe spins and winds it up the same way.
+      const onTouchStart = (e: TouchEvent) => {
+        touchY = e.touches[0]?.clientY ?? null;
+      };
+      const onTouchMove = (e: TouchEvent) => {
+        const y = e.touches[0]?.clientY;
+        if (y === undefined || touchY === null) return;
+        const dy = (touchY - y) * 2;
+        touchY = y;
+        boost = Math.max(-0.12, Math.min(0.12, boost + dy * 0.0006));
+        energy = addSpin(energy, dy);
+      };
       window.addEventListener("wheel", onWheel, { passive: true });
+      window.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
       window.addEventListener("pointermove", onPointerMove);
       document.addEventListener("visibilitychange", onVisibility);
       if (!document.hidden) start();
@@ -533,6 +625,8 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         cancelAnimationFrame(raf);
         ro.disconnect();
         window.removeEventListener("wheel", onWheel);
+        window.removeEventListener("touchstart", onTouchStart);
+        window.removeEventListener("touchmove", onTouchMove);
         window.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("visibilitychange", onVisibility);
         dispose();

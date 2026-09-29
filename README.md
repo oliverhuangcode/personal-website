@@ -82,13 +82,17 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. Materials are
   lacquered gunmetal with a world-space wear pattern in the roughness, machined trim and matte
   polymer, lit by a studio environment map with ACES tone mapping, soft shadows and bloom.
-  **Motion:** the light is deliberately steady: no heartbeat, no flare, no shockwaves, and
-  clicks don't flash it. What moves is mechanical or orbital: arcs of light revolve around the
-  spike on tilted orbits (camera-facing ribbons, depth-tested so they pass behind it), energy
-  rings climb the core, the helix turns, the casing ring rides slowly up and down, the floor HUD
-  turns, and a few motes drift up. Scroll spins it, the pointer tilts the camera. Bloom is scaled
-  to the spike's on-screen size so it can't wash out the name on phones. The flat canvas fallback
-  (no WebGL) still draws the older, charging design from the
+  **Motion:** at rest the spike is a dim silhouette behind the name, so the name leads. Scrolling
+  (or a vertical swipe on a phone) spins it and winds up an energy level (`lib/holo/energy.ts`,
+  unit tested): the device and scene exposure slowly brighten, sparks fly out from the core, and
+  arcs of light start crackling around it, each at a random radius, height, tilt, speed and
+  direction, on a jittering path with a flickering brightness. None of those appear until you
+  spin it. Stop, and it runs back down over about twenty seconds. Mechanical parts (energy rings,
+  helix, the casing ring riding up and down) move on their own; there's no heartbeat, flare or
+  floor ring. The canvas publishes `data-energy` for tests. Bloom is scaled to the spike's
+  on-screen size so it can't wash out the name on phones. The hero text is `select-none`, since
+  drags there spin the spike. The flat canvas fallback (no WebGL) still draws the older design
+  from the
   simpler part list in `lib/holo/spike.ts`.
   **Startup:** on a first visit the scene is built only after the boot intro ends, and shaders
   are compiled with `compileAsync` before the first frame, then the canvas fades in. Building it

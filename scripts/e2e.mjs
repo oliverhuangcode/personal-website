@@ -220,7 +220,20 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
     const c = await shot();
     if (Buffer.compare(a, c) === 0) fail.push("home spike is not animating");
     if (a.length < 5000) fail.push("home spike canvas looks empty");
+
+    // It rests dim, and scrolling winds it up.
+    const energy = async () => Number(await canvas.getAttribute("data-energy"));
+    await hp.waitForTimeout(400);
+    if ((await energy()) > 0.02) fail.push("home spike is not at rest before any scrolling");
+    await hp.mouse.move(700, 440);
+    for (let i = 0; i < 12; i++) await hp.mouse.wheel(0, 120);
+    await hp.waitForTimeout(1500);
+    if ((await energy()) < 0.2) fail.push("scrolling did not wind up the home spike");
   }
+
+  // The hero text can't be selected: a drag while spinning mustn't paint over the name.
+  await hp.locator("h1").click({ clickCount: 3 });
+  if (await hp.evaluate(() => String(window.getSelection()).trim().length > 0)) fail.push("home hero text is selectable");
   await hp.close();
 }
 

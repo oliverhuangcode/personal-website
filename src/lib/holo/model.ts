@@ -12,8 +12,9 @@ import type { Part } from "./spike";
  * World units, y up. The floor is at y = −1.04 and the emitter tops out near 1.33, the same
  * envelope as the flat drawing in `spike.ts`, so the page layout does not move.
  *
- * The glow is steady; only mechanical parts move (energy rings climbing the core, the helix,
- * the casing ring riding up and down, the floor HUD turning). Everything is driven from
+ * The glow level comes in from outside (the scene raises it as you spin the device); only
+ * mechanical parts move on their own (energy rings climbing the core, the helix, the casing
+ * ring riding up and down). Everything is driven from
  * `update()`; this module owns no clock of its own.
  */
 
@@ -111,21 +112,6 @@ function faceFrame(phi: number, rBot: number, rTop: number, yBot: number, yTop: 
   return { pos: dir.multiplyScalar(r).setY(y), normal, tangent: new THREE.Vector3(-Math.sin(phi), 0, Math.cos(phi)) };
 }
 
-/** A radial-gradient or drawn texture; falls back to a flat texel off the DOM (unit tests). */
-function canvasTexture(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void): THREE.Texture {
-  if (typeof document === "undefined") {
-    const tex = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-    tex.needsUpdate = true;
-    return tex;
-  }
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  draw(c.getContext("2d")!, size);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
 // ── Shaders ────────────────────────────────────────────────────────────────
 
 const VIEW_VERT = /* glsl */ `
@@ -187,7 +173,6 @@ export function buildSpikeModel(): SpikeModel {
   const group = new THREE.Group();
   group.name = "spike";
   const materials = new Set<THREE.Material>();
-  const textures = new Set<THREE.Texture>();
   const mat = <M extends THREE.Material>(m: M) => (materials.add(m), m);
 
   // Armour: lacquered gunmetal with a world-space wear pattern in the roughness, so broad
@@ -512,43 +497,6 @@ export function buildSpikeModel(): SpikeModel {
     }
   });
 
-  // ── Floor HUD ring ──────────────────────────────────────────────────────
-  const hudTex = canvasTexture(512, (g, s) => {
-    const c = s / 2;
-    g.strokeStyle = "rgba(185,135,255,1)";
-    g.lineWidth = 3;
-    g.beginPath();
-    g.arc(c, c, s * 0.44, 0, TAU);
-    g.stroke();
-    g.lineWidth = 2;
-    for (let i = 0; i < 72; i++) {
-      const a = (i / 72) * TAU;
-      const long = i % 6 === 0;
-      const r0 = s * (long ? 0.4 : 0.415);
-      g.globalAlpha = long ? 1 : 0.55;
-      g.beginPath();
-      g.moveTo(c + Math.cos(a) * r0, c + Math.sin(a) * r0);
-      g.lineTo(c + Math.cos(a) * s * 0.43, c + Math.sin(a) * s * 0.43);
-      g.stroke();
-    }
-    g.globalAlpha = 1;
-    g.lineWidth = 6;
-    for (let i = 0; i < 3; i++) {
-      const a = (i / 3) * TAU;
-      g.beginPath();
-      g.arc(c, c, s * 0.47, a + 0.2, a + 0.75);
-      g.stroke();
-    }
-  });
-  textures.add(hudTex);
-  const hudMat = mat(
-    new THREE.MeshBasicMaterial({ map: hudTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-  );
-  const hud = add(new THREE.PlaneGeometry(3.1, 3.1), hudMat, "floor hud", false);
-  hud.rotation.x = -Math.PI / 2;
-  hud.position.y = FLOOR + 0.004;
-  hud.renderOrder = 1;
-
   // Light spilling from the core onto the struts, clamp and the cap's underside.
   const coreLights = [-0.2, 0.55].map((y) => {
     const l = new THREE.PointLight(ACC, 0, 2.6, 1.8);
@@ -592,13 +540,10 @@ export function buildSpikeModel(): SpikeModel {
       casing.position.y = -0.36 + (0.5 - 0.5 * Math.cos(t * 0.35)) * 0.9;
       casing.rotation.y = -t * 0.15;
 
-      hud.rotation.z = t * 0.12;
-      hudMat.opacity = 0.1 + glow * 0.12;
     },
     dispose() {
       group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
       for (const m of materials) m.dispose();
-      for (const tex of textures) tex.dispose();
     },
   };
 }
