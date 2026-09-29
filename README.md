@@ -88,13 +88,15 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   (`lib/holo/energy.ts`, unit tested). **Charge** builds with every scroll and drains over about
   twelve seconds; it brightens the core, its glow and the bloom, so it feels like charging up.
   **Activity** says you're spinning it right now and is gone about half a second after your last
-  scroll; sparks from the core and thick, soft arcs of light (short curved streaks, an fbm
-  shader on camera-facing ribbons, lavender to deep purple) only spawn while it's up, more of them
+  scroll; sparks from the core and soft streaks of light (each a bright line with a gentle halo,
+  about the weight of a light ring rather than a lightning bolt; a shader on camera-facing
+  ribbons, lavender to deep purple) only spawn while it's up, more of them
   the higher the charge, and the ones already out burn off faster once you stop. The light lives
   inside the core: the core's point lights are short range, and the outer shell stays dark and
   matte. Mechanical parts (energy rings, helix, the casing ring riding up and down) move on
   their own; there's no heartbeat, flare or floor ring. The canvas publishes `data-energy` and
-  `data-activity` for tests. Bloom is scaled to the spike's
+  `data-activity` for tests. The additive shaders write opacity equal to their brightness: the canvas is
+  transparent, and full opacity on faint edges showed up as dark smudges over the page. Bloom is scaled to the spike's
   on-screen size so it can't wash out the name on phones. The hero text is `select-none`, since
   drags there spin the spike. The flat canvas fallback (no WebGL) still draws the older design
   from the

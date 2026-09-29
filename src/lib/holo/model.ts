@@ -145,7 +145,10 @@ const CORE_FRAG = /* glsl */ `
     float energy = 0.03 + rim * 0.6 + centre * (0.25 + uCharge * 0.8) + bands * 0.4;
     energy *= 0.25 + uCharge * 0.6;
     vec3 hot = mix(uColor, vec3(1.0), clamp(uCharge * 0.35 + centre * 0.3, 0.0, 1.0));
-    gl_FragColor = vec4(hot * energy, 1.0);
+    // Additive light on a transparent canvas: opacity must follow brightness, or faint edges
+    // turn opaque and show up as dark smudges over the page.
+    vec3 rgb = hot * energy;
+    gl_FragColor = vec4(rgb, clamp(max(rgb.r, max(rgb.g, rgb.b)), 0.0, 1.0));
   }
 `;
 
@@ -163,7 +166,8 @@ const GLASS_FRAG = /* glsl */ `
     float streak = smoothstep(0.02, 0.0, abs(fract(vY * 0.9 + 0.2) - 0.5) - 0.45) * 0.05;
     float a = edge * 0.6 + streak + 0.006;
     vec3 c = mix(vec3(0.85, 0.82, 0.95), uColor, 0.45) * (0.5 + uGlow * 0.5);
-    gl_FragColor = vec4(c * a, 1.0);
+    vec3 rgb = c * a;
+    gl_FragColor = vec4(rgb, clamp(max(rgb.r, max(rgb.g, rgb.b)), 0.0, 1.0));
   }
 `;
 

@@ -24,8 +24,8 @@ const MAX_DPR = 2;
 const POOL_SPARKS = 220;
 const ARC_POOL = 22;
 const ARC_SEGMENTS = 28;
-/** Base half-width of a spark ribbon in model units; each spark scales it. */
-const ARC_HALF_WIDTH = 0.11;
+/** Half-width of a spark ribbon in model units: a soft line with a halo, not a blob. */
+const ARC_HALF_WIDTH = 0.08;
 const TAU = Math.PI * 2;
 
 /**
@@ -64,11 +64,11 @@ function newArc(a = Math.random() * TAU, y = -0.6 + Math.random() * 1.4): Arc {
     tilt: (Math.random() - 0.5) * 2,
     node: Math.random() * TAU,
     a: a + (Math.random() - 0.5) * 0.9,
-    w: (Math.random() < 0.5 ? -1 : 1) * (2.2 + Math.random() * 4),
-    span: 0.35 + Math.random() * 0.8,
+    w: (Math.random() < 0.5 ? -1 : 1) * (3 + Math.random() * 4),
+    span: 0.5 + Math.random() * 0.9,
     dr: 0.2 + Math.random() * 0.55,
     dy: -0.2 + Math.random() * 0.5,
-    thick: 0.7 + Math.random() * 0.9,
+    thick: 0.8 + Math.random() * 0.5,
     life: 0,
     max: 0.45 + Math.random() * 0.7,
     seed: Math.random() * 100,
@@ -107,7 +107,9 @@ const ARC_FRAG = /* glsl */ `
     float seed = vInfo.z;
     // The core: a thin, hot line.
     // A soft, wide core rather than a crisp line: these are thick glowing sparks.
-    float core = smoothstep(0.45, 0.0, d) * 0.6 + smoothstep(0.14, 0.0, d) * 0.4;
+    // A soft but defined line, like a light ring: a bright centre, then a gentle halo.
+    float core = smoothstep(0.42, 0.0, d);
+    float halo = exp(-d * 2.4) * 0.7;
     // The flame: turbulent wisps that lick outward from the core and drift along the arc. Two
     // octave bands, one broad and slow, one fine and fast, so it reads as smoke, not blur.
     float broad = fbm(vec2(u * 7.0 + seed - uTime * 0.7, d * 2.2 - uTime * 1.4 + seed));
@@ -115,15 +117,19 @@ const ARC_FRAG = /* glsl */ `
     // Mostly the broad band: smooth, soft glow with just a hint of fine turbulence.
     float flame = broad * 0.85 + fine * 0.18;
     float reach = d - (flame - 0.45) * 0.9;
-    float smoke = smoothstep(1.0, 0.0, reach) * (0.35 + flame * 0.65);
+    // Only a faint wisp of flame now: the line and its halo carry the look.
+    float smoke = smoothstep(1.0, 0.0, reach) * (0.35 + flame * 0.65) * 0.3;
     // Fade in at the head, burn out toward the tail.
     float along = smoothstep(0.0, 0.12, u) * smoothstep(1.0, 0.45, u);
     // Accent #b987ff family only: pale lavender head, deep purple tail.
     vec3 lavender = vec3(0.6, 0.44, 1.0);
     vec3 purple = vec3(0.4, 0.18, 0.86);
     vec3 col = mix(lavender, purple, smoothstep(0.2, 0.85, u));
-    vec3 c = col * smoke * 0.7 + mix(col, vec3(1.0), 0.4) * core * 0.9;
-    gl_FragColor = vec4(c * along * vAlpha, 1.0);
+    vec3 c = col * (smoke + halo) + mix(col, vec3(1.0), 0.5) * core * 1.1;
+    // Additive light on a transparent canvas: opacity must follow brightness, or faint edges
+    // turn opaque and show up as dark smudges over the page.
+    vec3 rgb = c * along * vAlpha;
+    gl_FragColor = vec4(rgb, clamp(max(rgb.r, max(rgb.g, rgb.b)), 0.0, 1.0));
   }
 `;
 
@@ -536,7 +542,8 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
             viewLocal.set(camPos.x - cl[k * 3], camPos.y - cl[k * 3 + 1], camPos.z - cl[k * 3 + 2]);
             side.crossVectors(tmpA, viewLocal).normalize();
             // Fattest just behind the head, tapering to a soft point at both ends.
-            const half = ARC_HALF_WIDTH * arc.thick * (0.35 + 0.65 * Math.sin(Math.min(1, u * 1.6) * Math.PI * 0.5 + u * 1.2)) * (1 - u * 0.5);
+            // An even streak: full width most of the way, rounding in at the head, thinning to the tail.
+            const half = ARC_HALF_WIDTH * arc.thick * Math.min(1, u * 8) * (1 - u * 0.6);
             const v = k * 2;
             tmpB.set(cl[k * 3], cl[k * 3 + 1], cl[k * 3 + 2]);
             pos.setXYZ(v, tmpB.x + side.x * half, tmpB.y + side.y * half, tmpB.z + side.z * half);
