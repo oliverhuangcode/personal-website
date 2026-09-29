@@ -60,9 +60,6 @@ export function TargetReticle({
         <path d="M10.5 1.6A11 11 0 0 1 17.5 1.6" fill="none" stroke="var(--color-title)" strokeWidth={1.5} opacity={0.9} />
         {/* The pin's eye, cut through to the ground. */}
         <circle cx={x} cy={y} r={5} fill="var(--color-bg)" stroke="currentColor" strokeWidth={1.25} />
-        {/* Core: a hollow diamond around a pip. */}
-        <path d={`M${x} ${y - 2.6}L${x + 2.6} ${y}L${x} ${y + 2.6}L${x - 2.6} ${y}Z`} fill="none" stroke="currentColor" strokeWidth={1} />
-        <rect x={x - 0.9} y={y - 0.9} width={1.8} height={1.8} fill="var(--color-title)" transform={`rotate(45 ${x} ${y})`} />
       </svg>
       <svg
         viewBox={`0 0 ${PIN_W} ${PIN_H}`}
