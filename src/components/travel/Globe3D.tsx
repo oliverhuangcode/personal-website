@@ -351,7 +351,13 @@ export function Globe3D({
         style={{ width: MARKER_PX, height: MARKER_PX }}
         className="group absolute top-0 left-0 cursor-pointer"
       >
-        <TargetReticle target={target} label={label} lockKey={flyKey} flip={flip} />
+        <TargetReticle
+          target={target}
+          label={label}
+          visited={destinations[index]?.visited}
+          lockKey={flyKey}
+          flip={flip}
+        />
       </button>
     </div>
   );
