@@ -33,11 +33,22 @@ export interface Trip {
 
 export interface Dish {
   name: string;
-  /** Out of 10, one decimal place. */
-  score: number;
-  city: string;
-  type: string;
   photo?: Photo;
+  /** Optional callout chip, e.g. "MUST ORDER", "SKIP". */
+  tag?: string;
+}
+
+export interface Restaurant {
+  name: string;
+  city: string;
+  cuisine: string;
+  /** When you ate there, e.g. "SEP 2026". */
+  visited: string;
+  /** Out of 10, one decimal place. Rank is derived from this. */
+  score: number;
+  review: string;
+  /** Up to MAX_DISHES. The carousel shows one slide per dish. */
+  dishes: Dish[];
 }
 
 export interface TimelineEntry {

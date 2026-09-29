@@ -2,6 +2,7 @@
 
 import { startTransition, useMemo, useState, ViewTransition } from "react";
 
+import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
 import { useArrowCycle } from "@/lib/keys";
@@ -10,7 +11,6 @@ import { pad2, pad3 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
 import { Globe } from "./Globe";
-import { PhotoCarousel } from "./PhotoCarousel";
 
 const pagerButton = "px-2.5 py-1 hover:text-ink";
 

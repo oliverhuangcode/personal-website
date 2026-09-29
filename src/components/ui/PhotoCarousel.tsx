@@ -4,7 +4,9 @@ import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Photo } from "@/content/types";
 
 interface PhotoCarouselProps {
-  photos: Photo[];
+  /** A slide without a photo shows its `fallbacks` entry in an empty frame. */
+  photos: (Photo | undefined)[];
+  fallbacks?: string[];
   index: number;
   onChange: (index: number) => void;
   label: string;
@@ -15,7 +17,7 @@ interface PhotoCarouselProps {
 const arrow = "px-2 py-0.5 font-mono text-[12px] text-ink-muted hover:text-ink";
 
 /** One slide per photo. Controls only appear when there is more than one. */
-export function PhotoCarousel({ photos, index, onChange, label, revealKey }: PhotoCarouselProps) {
+export function PhotoCarousel({ photos, fallbacks, index, onChange, label, revealKey }: PhotoCarouselProps) {
   const count = photos.length;
   const current = count ? Math.min(index, count - 1) : 0;
   const go = (i: number) => onChange((i + count) % count);
@@ -25,6 +27,7 @@ export function PhotoCarousel({ photos, index, onChange, label, revealKey }: Pho
       <div key={`${revealKey}-${current}`} className="animate-wipe">
         <MediaFrame
           photo={photos[current]}
+          fallback={fallbacks?.[current]}
           sizes="(min-width: 1280px) 400px, (min-width: 800px) 33vw, 100vw"
           className="chamfer-x-sm aspect-[4/3]"
         />
@@ -34,9 +37,9 @@ export function PhotoCarousel({ photos, index, onChange, label, revealKey }: Pho
           <button type="button" aria-label="Previous photo" onClick={() => go(current - 1)} className={arrow}>
             ◂
           </button>
-          {photos.map((photo, i) => (
+          {photos.map((_, i) => (
             <button
-              key={photo.src}
+              key={i}
               type="button"
               aria-label={`Photo ${i + 1} of ${count}`}
               aria-current={i === current}
