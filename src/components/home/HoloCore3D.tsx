@@ -106,14 +106,15 @@ function zigzag(seed: number, u: number, tick: number, amp: number): number {
 function newArc(a = Math.random() * TAU, y = -0.6 + Math.random() * 1.4): Arc {
   return {
     live: true,
-    r: 0.52 + Math.random() * 0.45,
+    // Close around the body: just outside the chamber and struts.
+    r: 0.46 + Math.random() * 0.26,
     y: y + (Math.random() - 0.5) * 0.25,
     tilt: (Math.random() - 0.5) * 2,
     node: Math.random() * TAU,
     a: a + (Math.random() - 0.5) * 0.9,
     w: (Math.random() < 0.5 ? -1 : 1) * (3 + Math.random() * 4),
     span: 0.9 + Math.random() * 1.0,
-    dr: 0.2 + Math.random() * 0.55,
+    dr: 0.08 + Math.random() * 0.25,
     dy: -0.2 + Math.random() * 0.5,
     thick: 0.8 + Math.random() * 0.5,
     life: 0,
