@@ -61,6 +61,7 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
           target={trip}
           flyKey={selection.seq}
           label={trip.name}
+          index={index}
           onMarkerClick={() => select(index)}
         />
         <div className="flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] text-ink-muted">

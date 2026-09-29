@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import type { GlobeProps } from "./globe-types";
+import { PIN_H, PIN_W, TargetReticle } from "./TargetReticle";
 import { LAND_RINGS } from "@/lib/globe/land";
 import {
   GLOBE_CENTRE,
@@ -40,7 +41,7 @@ interface DragState {
 }
 
 /** Orthographic SVG globe: drag to spin, tweens to the selected destination. */
-export function Globe2D({ target, flyKey, label, onMarkerClick }: GlobeProps) {
+export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick }: GlobeProps) {
   const ids = useId();
   const seaId = `${ids}-sea`;
   const clipId = `${ids}-clip`;
@@ -130,8 +131,6 @@ export function Globe2D({ target, flyKey, label, onMarkerClick }: GlobeProps) {
 
   return (
     <div
-      role="img"
-      aria-label={`Globe showing ${label}. Drag to spin.`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
@@ -141,6 +140,8 @@ export function Globe2D({ target, flyKey, label, onMarkerClick }: GlobeProps) {
       }`}
     >
       <svg
+        role="img"
+        aria-label={`Globe showing ${label}. Drag to spin.`}
         viewBox={`0 0 ${GLOBE_SIZE} ${GLOBE_SIZE}`}
         className="block size-full overflow-visible"
       >
@@ -185,22 +186,29 @@ export function Globe2D({ target, flyKey, label, onMarkerClick }: GlobeProps) {
           fill="none"
           stroke="#332f3d"
         />
-        {marker.visible && (
-          <g
-            transform={`translate(${marker.x.toFixed(1)},${marker.y.toFixed(1)})`}
-          >
-            <rect
-              x={-5}
-              y={-5}
-              width={10}
-              height={10}
-              transform="rotate(45)"
-              className="cursor-pointer fill-accent"
-              onClick={onMarkerClick}
-            />
-          </g>
-        )}
       </svg>
+      {marker.visible && (
+        <button
+          type="button"
+          aria-label={`Centre the globe on ${label}`}
+          onClick={onMarkerClick}
+          style={{
+            width: PIN_W,
+            height: PIN_H,
+            left: `calc(${(marker.x / GLOBE_SIZE) * 100}% - ${PIN_W / 2}px)`,
+            top: `calc(${(marker.y / GLOBE_SIZE) * 100}% - ${PIN_H}px)`,
+          }}
+          className="absolute cursor-pointer"
+        >
+          <TargetReticle
+            target={target}
+            label={label}
+            index={index}
+            lockKey={flyKey}
+            flip={marker.x > GLOBE_CENTRE + GLOBE_RADIUS * 0.1}
+          />
+        </button>
+      )}
     </div>
   );
 }

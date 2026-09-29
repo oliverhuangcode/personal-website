@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
 
 import { LAND_RINGS } from "@/lib/globe/land";
@@ -8,6 +8,7 @@ import { clampLat, easeInOutCubic, wrapLonDelta } from "@/lib/globe/projection";
 import { faceRotation, graticuleSegments, ringSegments, toVec3 } from "@/lib/globe/sphere";
 
 import type { GlobeProps, LonLatPoint } from "./globe-types";
+import { PIN_H, PIN_W, TargetReticle } from "./TargetReticle";
 
 const FLY_MS = 750;
 const DRAG_DEG_PER_PX = 0.4;
@@ -17,7 +18,6 @@ const FOV = 28;
 /** Camera distance that frames the sphere at ~93% of the view, as the flat globe did. */
 const CAMERA_DIST = 4.41;
 const MAX_DPR = 2;
-const HIT_PX = 30;
 
 interface DragState {
   pointerId: number;
@@ -35,31 +35,12 @@ interface SceneApi {
   invalidate: () => void;
 }
 
-const RIM_VERT = /* glsl */ `
-  varying vec3 vN;
-  varying vec3 vV;
-  void main() {
-    vec4 mv = modelViewMatrix * vec4(position, 1.0);
-    vN = normalize(normalMatrix * normal);
-    vV = normalize(-mv.xyz);
-    gl_Position = projectionMatrix * mv;
-  }
-`;
-const RIM_FRAG = /* glsl */ `
-  varying vec3 vN;
-  varying vec3 vV;
-  void main() {
-    float f = pow(1.0 - abs(dot(vN, vV)), 3.0);
-    gl_FragColor = vec4(vec3(0.725, 0.529, 1.0) * f, f * 0.55);
-  }
-`;
-
 /**
  * The travel globe as a real 3D scene: drag to spin, and it turns to the selected
  * destination. The marker's click target is a real button laid over the canvas, so it
  * is keyboard-reachable and works with assistive tech.
  */
-export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }: GlobeProps) {
+export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUnsupported }: GlobeProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markerRef = useRef<HTMLButtonElement>(null);
@@ -69,6 +50,8 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
   const targetRef = useRef<LonLatPoint>(target);
   const rafRef = useRef(0);
   const dragRef = useRef<DragState | null>(null);
+  // Readout tag side: flips left when the marker is on the right half of the globe.
+  const [flip, setFlip] = useState(false);
 
   const setCentre = (c: LonLatPoint) => {
     centreRef.current = c;
@@ -133,38 +116,32 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
       const coast = lines(ringSegments(LAND_RINGS, 1.003), 0x6a677a, 0.95);
       globe.add(sea, graticule, coast);
 
-      const rimMat = new T.ShaderMaterial({
-        vertexShader: RIM_VERT,
-        fragmentShader: RIM_FRAG,
-        transparent: true,
-        blending: T.AdditiveBlending,
-        depthWrite: false,
-        side: T.BackSide,
-      });
-      const rim = new T.Mesh(new T.SphereGeometry(1.07, 48, 32), rimMat);
-      scene.add(rim);
-
       const key = new T.DirectionalLight(0xffffff, 2.2);
       key.position.set(-2.4, 2.4, 3);
       scene.add(key, new T.AmbientLight(0x6f6a86, 0.9));
 
-      // Destination marker: a diamond standing on the surface, with a ping ring.
+      // Destination marker on the surface: a thin target ring and a sonar ping. The pin,
+      // bracket lock and readout are HTML laid over it, the pin's tip on the ring (see TargetReticle).
       const markerGroup = new T.Group();
-      const diamondMat = new T.MeshBasicMaterial({ color: 0xb987ff });
-      const diamond = new T.Mesh(new T.OctahedronGeometry(0.05, 0), diamondMat);
-      // Long axis out of the surface, so it reads as a standing crystal from the side.
-      diamond.scale.set(1, 1, 1.7);
+      const ringMat = new T.MeshBasicMaterial({
+        color: 0xb987ff,
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: T.DoubleSide,
+      });
+      const ring = new T.Mesh(new T.RingGeometry(0.034, 0.04, 48), ringMat);
       const pingMat = new T.MeshBasicMaterial({
         color: 0xb987ff,
         transparent: true,
         depthWrite: false,
         side: T.DoubleSide,
       });
-      const ping = new T.Mesh(new T.RingGeometry(0.05, 0.062, 40), pingMat);
-      diamond.position.z = 0.07;
-      // Lifted clear of the sphere: it curves away beneath the ring as the ring widens.
+      const ping = new T.Mesh(new T.RingGeometry(0.04, 0.046, 48), pingMat);
+      // Lifted clear of the sphere: it curves away beneath the rings as they widen.
+      ring.position.z = 0.006;
       ping.position.z = 0.016;
-      markerGroup.add(diamond, ping);
+      markerGroup.add(ring, ping);
       globe.add(markerGroup);
 
       const OUT = new T.Vector3(0, 0, 1);
@@ -204,8 +181,7 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
         if (!W && !resize()) return;
         // Ping ring: expands and fades, once every 1.8s. Held at rest under reduced motion.
         const k = reduced ? 0.35 : (((now - t0) / 1800) % 1);
-        diamond.rotation.z = reduced ? Math.PI / 4 : (now - t0) / 1400;
-        ping.scale.setScalar(1 + k * 1.7);
+        ping.scale.setScalar(1 + k * 2.2);
         pingMat.opacity = reduced ? 0.5 : (1 - k) * 0.8;
 
         globe.updateMatrixWorld(true);
@@ -219,7 +195,8 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
         proj.project(camera);
         const h = canvas.clientHeight;
         marker.style.visibility = shown ? "visible" : "hidden";
-        marker.style.transform = `translate(${((proj.x + 1) / 2) * W - HIT_PX / 2}px, ${((1 - proj.y) / 2) * h - HIT_PX / 2}px)`;
+        marker.style.transform = `translate(${((proj.x + 1) / 2) * W - PIN_W / 2}px, ${((1 - proj.y) / 2) * h - PIN_H}px)`;
+        setFlip(proj.x > 0.1);
       };
 
       const frame = (now: number) => {
@@ -265,7 +242,7 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
         document.removeEventListener("visibilitychange", onVisibility);
         apiRef.current = null;
         scene.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
-        for (const m of [sea.material, graticule.material, coast.material, rimMat, diamondMat, pingMat]) {
+        for (const m of [sea.material, graticule.material, coast.material, ringMat, pingMat]) {
           (m as THREE.Material).dispose();
         }
         renderer.dispose();
@@ -347,9 +324,11 @@ export function Globe3D({ target, flyKey, label, onMarkerClick, onUnsupported }:
         type="button"
         aria-label={`Centre the globe on ${label}`}
         onClick={onMarkerClick}
-        style={{ width: HIT_PX, height: HIT_PX }}
+        style={{ width: PIN_W, height: PIN_H }}
         className="absolute top-0 left-0 cursor-pointer"
-      />
+      >
+        <TargetReticle target={target} label={label} index={index} lockKey={flyKey} flip={flip} />
+      </button>
     </div>
   );
 }
