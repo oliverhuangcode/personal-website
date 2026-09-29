@@ -19,7 +19,8 @@ const TAU = Math.PI * 2;
 
 /**
  * A swirl of light around the device, like a ring of fire: a thin bright core line wrapped in
- * wispy flame that drifts along it, violet at the head burning to orange at the tail. Each one
+ * wispy flame that drifts along it, pale lavender at the head deepening to purple at the tail
+ * (the site's accent family, no other hue). Each one
  * appears at a random radius, height and tilt, sweeps round in either direction for a second
  * or two, and fades.
  */
@@ -96,10 +97,11 @@ const ARC_FRAG = /* glsl */ `
     float smoke = smoothstep(0.9, 0.05, reach) * smoothstep(0.02, 0.35, flame);
     // Fade in at the head, burn out toward the tail.
     float along = smoothstep(0.0, 0.06, u) * smoothstep(1.0, 0.55, u);
-    vec3 violet = vec3(0.52, 0.4, 1.0);
-    vec3 ember = vec3(1.0, 0.48, 0.16);
-    vec3 col = mix(violet, ember, smoothstep(0.25, 0.85, u));
-    vec3 c = col * smoke * 1.25 + mix(col, vec3(1.0), 0.6) * core * 1.2;
+    // Accent #b987ff family only: pale lavender head, deep purple tail.
+    vec3 lavender = vec3(0.6, 0.44, 1.0);
+    vec3 purple = vec3(0.4, 0.18, 0.86);
+    vec3 col = mix(lavender, purple, smoothstep(0.2, 0.85, u));
+    vec3 c = col * smoke * 0.95 + mix(col, vec3(1.0), 0.45) * core * 1.1;
     gl_FragColor = vec4(c * along * vAlpha, 1.0);
   }
 `;
