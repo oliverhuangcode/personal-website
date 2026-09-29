@@ -87,11 +87,12 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   Scrolling (or a vertical swipe on a phone) spins it and drives two separate signals
   (`lib/holo/energy.ts`, unit tested). **Charge** builds with every scroll and drains over about
   twelve seconds; it brightens the core, its glow and the bloom, so it feels like charging up.
-  **Activity** says you're spinning it right now and is gone about half a second after your last
-  scroll; sparks from the core and soft streaks of light (each a bright line with a gentle halo,
-  about the weight of a light ring rather than a lightning bolt; a shader on camera-facing
-  ribbons, lavender to deep purple) only spawn while it's up, more of them
-  the higher the charge, and the ones already out burn off faster once you stop. The light lives
+  **Activity** says you're spinning it right now and eases out over about three seconds after
+  your last scroll. Sparks from the core and bolts of soft lightning spawn in proportion to it,
+  more of them the higher the charge, so when you stop they thin out and fade rather than cut
+  off. Each bolt zigzags between random kinks that re-jolt 14 times a second, with one or two
+  thinner forks branching off; it's drawn as a camera-facing ribbon with a soft bright line and
+  halo (lavender to deep purple), so it reads thicker and gentler than real lightning. The light lives
   inside the core: the core's point lights are short range, and the outer shell stays dark and
   matte. Mechanical parts (energy rings, helix, the casing ring riding up and down) move on
   their own; there's no heartbeat, flare or floor ring. The canvas publishes `data-energy` and

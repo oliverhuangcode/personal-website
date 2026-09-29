@@ -7,7 +7,6 @@ import {
   addActivity,
   addSpin,
   arcRate,
-  burnRate,
   decay,
   exposureFor,
   follow,
@@ -23,16 +22,19 @@ const FOV = 38;
 const MAX_DPR = 2;
 const POOL_SPARKS = 220;
 const ARC_POOL = 22;
+/** Forks per bolt, at most. */
+const MAX_FORKS = 2;
 const ARC_SEGMENTS = 28;
 /** Half-width of a spark ribbon in model units: a soft line with a halo, not a blob. */
-const ARC_HALF_WIDTH = 0.08;
+const ARC_HALF_WIDTH = 0.095;
 const TAU = Math.PI * 2;
 
 /**
- * A thick, soft spark of light thrown off the device: a short curved streak at a random
- * height, angle and tilt that whips round, spirals outward and drifts up or down as it fades,
- * like an ember flung from something spinning. They come in small clusters, so the effect
- * reads as a spray of sparks rather than one tidy ring.
+ * A bolt of soft lightning thrown off the device: a curved streak at a random height, angle
+ * and tilt that whips round, spirals outward and drifts as it fades. Its path is jagged, kinking
+ * and re-jolting several times a second, and one or two thinner forks branch off it. It keeps a
+ * soft glowing line and halo, so it reads thicker and gentler than real lightning. They come in
+ * small clusters, as a spray rather than one tidy ring.
  */
 interface Arc {
   live: boolean;
@@ -53,6 +55,51 @@ interface Arc {
   life: number;
   max: number;
   seed: number;
+  forks: Fork[];
+}
+
+/** A branch off a bolt: where it leaves the main path, and how it wanders from there. */
+interface Fork {
+  /** Where along the main bolt it branches, 0 (head) to 1 (tail). */
+  at: number;
+  /** Length in radians of sweep. */
+  len: number;
+  /** How far it veers outward and up or down over its length, in model units. */
+  dr: number;
+  dy: number;
+  seed: number;
+}
+
+function newFork(): Fork {
+  return {
+    at: 0.15 + Math.random() * 0.45,
+    len: 0.35 + Math.random() * 0.4,
+    dr: (Math.random() - 0.3) * 0.3,
+    dy: (Math.random() - 0.5) * 0.45,
+    seed: Math.random() * 100,
+  };
+}
+
+/** Cheap deterministic noise in [0, 1). */
+const hash = (x: number) => {
+  const v = Math.sin(x * 127.1) * 43758.5453;
+  return v - Math.floor(v);
+};
+
+/** Kinks per bolt, and how often the path re-jolts, per second. */
+const KINKS = 9;
+const JOLT_HZ = 14;
+
+/**
+ * Lightning-style offset along a path: straight segments between random kink points, so it
+ * zigzags with sharp corners. Re-rolled `JOLT_HZ` times a second. Pinned to zero at the start.
+ */
+function zigzag(seed: number, u: number, tick: number, amp: number): number {
+  const j = u * KINKS;
+  const i = Math.floor(j);
+  const f = j - i;
+  const at = (n: number) => (n === 0 ? 0 : hash(seed + n * 7.13 + tick * 3.71) - 0.5);
+  return (at(i) + (at(i + 1) - at(i)) * f) * amp;
 }
 
 /** A spark near (`a`, `y`), or anywhere if they're omitted. */
@@ -65,13 +112,14 @@ function newArc(a = Math.random() * TAU, y = -0.6 + Math.random() * 1.4): Arc {
     node: Math.random() * TAU,
     a: a + (Math.random() - 0.5) * 0.9,
     w: (Math.random() < 0.5 ? -1 : 1) * (3 + Math.random() * 4),
-    span: 0.5 + Math.random() * 0.9,
+    span: 0.9 + Math.random() * 1.0,
     dr: 0.2 + Math.random() * 0.55,
     dy: -0.2 + Math.random() * 0.5,
     thick: 0.8 + Math.random() * 0.5,
     life: 0,
-    max: 0.45 + Math.random() * 0.7,
+    max: 0.55 + Math.random() * 0.75,
     seed: Math.random() * 100,
+    forks: Math.random() < 0.6 ? [newFork(), newFork()] : [newFork()],
   };
 }
 
@@ -356,7 +404,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         side: T.DoubleSide,
       });
       const arcs: Arc[] = Array.from({ length: ARC_POOL }, () => ({ ...newArc(), live: false }));
-      const ribbons = arcs.map(() => {
+      const makeRibbon = () => {
         const geo = new T.BufferGeometry();
         geo.setAttribute("position", new T.BufferAttribute(new Float32Array(rowVerts * 3), 3));
         geo.setAttribute("aInfo", new T.BufferAttribute(new Float32Array(rowVerts * 3), 3));
@@ -368,7 +416,40 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         m.renderOrder = 3;
         group.add(m);
         return m;
-      });
+      };
+      const ribbons = arcs.map(makeRibbon);
+      const forkRibbons = arcs.map(() => Array.from({ length: MAX_FORKS }, makeRibbon));
+
+      /**
+       * Writes a camera-facing ribbon through `pts` (x, y, z per point). `half(u)` gives its
+       * half-width along the way; `u0` offsets the shader's along-coordinate so a fork doesn't
+       * fade in again where it joins its bolt.
+       */
+      const writeRibbon = (mesh: THREE.Mesh, pts: number[], half: (u: number) => number, inten: number, seed: number, u0 = 0) => {
+        const pos = mesh.geometry.getAttribute("position") as THREE.BufferAttribute;
+        const info = mesh.geometry.getAttribute("aInfo") as THREE.BufferAttribute;
+        const alpha = mesh.geometry.getAttribute("aAlpha") as THREE.BufferAttribute;
+        for (let k = 0; k <= ARC_SEGMENTS; k++) {
+          const u = k / ARC_SEGMENTS;
+          const a = Math.max(0, k - 1) * 3;
+          const b = Math.min(ARC_SEGMENTS, k + 1) * 3;
+          tmpA.set(pts[b] - pts[a], pts[b + 1] - pts[a + 1], pts[b + 2] - pts[a + 2]); // tangent
+          viewLocal.set(camPos.x - pts[k * 3], camPos.y - pts[k * 3 + 1], camPos.z - pts[k * 3 + 2]);
+          side.crossVectors(tmpA, viewLocal).normalize();
+          const h = half(u);
+          const v = k * 2;
+          tmpB.set(pts[k * 3], pts[k * 3 + 1], pts[k * 3 + 2]);
+          pos.setXYZ(v, tmpB.x + side.x * h, tmpB.y + side.y * h, tmpB.z + side.z * h);
+          pos.setXYZ(v + 1, tmpB.x - side.x * h, tmpB.y - side.y * h, tmpB.z - side.z * h);
+          const along = u0 + u * (1 - u0);
+          info.setXYZ(v, along, 0, seed);
+          info.setXYZ(v + 1, along, 1, seed);
+          alpha.setX(v, inten);
+          alpha.setX(v + 1, inten);
+        }
+        pos.needsUpdate = info.needsUpdate = alpha.needsUpdate = true;
+        mesh.visible = true;
+      };
 
       // ── Motes ─────────────────────────────────────────────────────────
       const mPos = new Float32Array(POOL_SPARKS * 3);
@@ -504,56 +585,66 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           }
         }
         ribbonMat.uniforms.uTime.value = t;
-        const burn = burnRate(activity);
-        // Each is a camera-facing ribbon (same width from any angle), depth-tested so it passes
-        // behind the device. The path is a smooth tilted circle with a slight breathing wobble.
+        const tick = Math.floor(t * JOLT_HZ);
+        // Each bolt is a camera-facing ribbon (same width from any angle), depth-tested so it
+        // passes behind the device, zigzagging along a tilted orbit, with forks branching off.
         arcs.forEach((arc, ai) => {
           const mesh = ribbons[ai];
+          const forks = forkRibbons[ai];
           if (arc.live && !reduced) {
-            // Age faster once you stop spinning, so the sparks already out burn off promptly.
-            arc.life += dt * burn;
+            arc.life += dt;
             arc.a += arc.w * dt;
             arc.r += arc.dr * dt;
             arc.y += arc.dy * dt;
             if (arc.life >= arc.max) arc.live = false;
           }
-          mesh.visible = arc.live;
-          if (!arc.live) return;
+          if (!arc.live) {
+            mesh.visible = false;
+            for (const f of forks) f.visible = false;
+            return;
+          }
 
-          const k01 = arc.life / arc.max;
-          const inten = Math.sin(k01 * Math.PI) * (0.45 + shown * 0.35);
+          const inten = Math.sin((arc.life / arc.max) * Math.PI) * (0.45 + shown * 0.35);
           const dir = Math.sign(arc.w);
-          const pos = mesh.geometry.getAttribute("position") as THREE.BufferAttribute;
-          const info = mesh.geometry.getAttribute("aInfo") as THREE.BufferAttribute;
-          const alpha = mesh.geometry.getAttribute("aAlpha") as THREE.BufferAttribute;
+          const JAG = 0.075;
           const cl: number[] = [];
           for (let k = 0; k <= ARC_SEGMENTS; k++) {
             const u = k / ARC_SEGMENTS;
             const ang = arc.a - dir * u * arc.span;
-            const rr = arc.r + Math.sin(u * 5 + arc.seed + t * 1.3) * 0.012;
-            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr;
+            const rr = arc.r + zigzag(arc.seed, u, tick, JAG);
+            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr + zigzag(arc.seed + 31, u, tick, JAG * 0.9);
             cl.push(Math.cos(ang) * rr, yy, Math.sin(ang) * rr);
           }
-          for (let k = 0; k <= ARC_SEGMENTS; k++) {
-            const u = k / ARC_SEGMENTS;
-            const a = Math.max(0, k - 1) * 3;
-            const b = Math.min(ARC_SEGMENTS, k + 1) * 3;
-            tmpA.set(cl[b] - cl[a], cl[b + 1] - cl[a + 1], cl[b + 2] - cl[a + 2]); // tangent
-            viewLocal.set(camPos.x - cl[k * 3], camPos.y - cl[k * 3 + 1], camPos.z - cl[k * 3 + 2]);
-            side.crossVectors(tmpA, viewLocal).normalize();
-            // Fattest just behind the head, tapering to a soft point at both ends.
-            // An even streak: full width most of the way, rounding in at the head, thinning to the tail.
-            const half = ARC_HALF_WIDTH * arc.thick * Math.min(1, u * 8) * (1 - u * 0.6);
-            const v = k * 2;
-            tmpB.set(cl[k * 3], cl[k * 3 + 1], cl[k * 3 + 2]);
-            pos.setXYZ(v, tmpB.x + side.x * half, tmpB.y + side.y * half, tmpB.z + side.z * half);
-            pos.setXYZ(v + 1, tmpB.x - side.x * half, tmpB.y - side.y * half, tmpB.z - side.z * half);
-            info.setXYZ(v, u, 0, arc.seed);
-            info.setXYZ(v + 1, u, 1, arc.seed);
-            alpha.setX(v, inten);
-            alpha.setX(v + 1, inten);
-          }
-          pos.needsUpdate = info.needsUpdate = alpha.needsUpdate = true;
+          const w = ARC_HALF_WIDTH * arc.thick;
+          writeRibbon(mesh, cl, (u) => w * Math.min(1, u * 8) * (1 - u * 0.5), inten, arc.seed);
+
+          forks.forEach((fm, fi) => {
+            const fork = arc.forks[fi];
+            if (!fork) {
+              fm.visible = false;
+              return;
+            }
+            // Leave the bolt at its point `at`, then sweep on in the same direction, veering.
+            const k0 = Math.round(fork.at * ARC_SEGMENTS);
+            const sx = cl[k0 * 3];
+            const sy = cl[k0 * 3 + 1];
+            const sz = cl[k0 * 3 + 2];
+            const ang0 = arc.a - dir * fork.at * arc.span;
+            const r0 = Math.hypot(sx, sz);
+            const pts: number[] = [];
+            for (let k = 0; k <= ARC_SEGMENTS; k++) {
+              const v = k / ARC_SEGMENTS;
+              const ang = ang0 - dir * v * fork.len;
+              const rr = r0 + fork.dr * v + zigzag(fork.seed, v, tick, JAG * 0.8);
+              const yy = sy + fork.dy * v + zigzag(fork.seed + 17, v, tick, JAG * 0.8);
+              pts.push(Math.cos(ang) * rr, yy, Math.sin(ang) * rr);
+            }
+            // Snap the first point onto the bolt so the fork visibly springs from it.
+            pts[0] = sx;
+            pts[1] = sy;
+            pts[2] = sz;
+            writeRibbon(fm, pts, (v) => w * 0.6 * (1 - v * 0.75), inten * 0.85, fork.seed, 0.15);
+          });
         });
 
         // Sparks fly out from the core, thicker the more it's wound up.
@@ -583,7 +674,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
               mAlpha[i] = 0;
               return;
             }
-            m.life += dt * burn;
+            m.life += dt;
             if (m.life >= m.max) {
               m.live = false;
               mAlpha[i] = 0;

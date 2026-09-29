@@ -5,7 +5,6 @@ import {
   addActivity,
   addSpin,
   arcRate,
-  burnRate,
   decay,
   exposureFor,
   follow,
@@ -70,12 +69,20 @@ describe("what the energy drives", () => {
 });
 
 describe("activity", () => {
-  it("jumps up on a scroll and is gone within about half a second", () => {
-    const a = addActivity(0, 120);
-    expect(a).toBeGreaterThan(ACTIVE_THRESHOLD);
-    let x = a;
-    for (let i = 0; i < 30; i++) x = settle(x, 1 / 60);
-    expect(x).toBeLessThan(ACTIVE_THRESHOLD);
+  it("jumps up on a scroll, then fades out gradually over a few seconds", () => {
+    let x = 0;
+    for (let i = 0; i < 10; i++) x = addActivity(x, 120);
+    expect(x).toBe(1);
+    const after = (seconds: number) => {
+      let y = x;
+      for (let i = 0; i < seconds * 60; i++) y = settle(y, 1 / 60);
+      return y;
+    };
+    // Still sparking a second after you stop, just less…
+    expect(after(1)).toBeGreaterThan(ACTIVE_THRESHOLD);
+    expect(sparkRate(1, after(1))).toBeLessThan(sparkRate(1, 1));
+    // …and quiet a few seconds later.
+    expect(after(3.5)).toBeLessThan(ACTIVE_THRESHOLD);
   });
 
   it("stops the effects long before the charge runs down", () => {
@@ -85,16 +92,11 @@ describe("activity", () => {
       charge = addSpin(charge, 120);
       act = addActivity(act, 120);
     }
-    for (let i = 0; i < 60; i++) {
+    for (let i = 0; i < 4 * 60; i++) {
       charge = decay(charge, 1 / 60);
       act = settle(act, 1 / 60);
     }
     expect(sparkRate(charge, act)).toBe(0);
-    expect(glowFor(charge)).toBeGreaterThan(0.8);
-  });
-
-  it("burns off sparks already out faster once you stop", () => {
-    expect(burnRate(1)).toBe(1);
-    expect(burnRate(0)).toBeGreaterThan(2);
+    expect(glowFor(charge)).toBeGreaterThan(0.7);
   });
 });

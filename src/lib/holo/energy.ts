@@ -3,9 +3,10 @@
  *
  * - **Charge** builds with every scroll or swipe and drains slowly once you stop. It sets how
  *   bright the device glows, so it feels like it's charging up.
- * - **Activity** says whether you're spinning it right now. It spikes on each scroll and falls
- *   to zero within about half a second. Sparks and arcs only spawn while it's up, so the effects
- *   outside the device die away as soon as you stop, even while the glow lingers.
+ * - **Activity** says whether you're spinning it right now. It spikes on each scroll and eases
+ *   back to zero over about three seconds. Sparks and arcs spawn in proportion to it, so when you
+ *   stop, the effects outside the device thin out and die away gradually rather than cutting off,
+ *   while the glow lingers longer still.
  *
  * Pure functions, so the feel can be tuned and tested without a renderer.
  */
@@ -16,8 +17,8 @@ export const SCROLL_GAIN = 0.00065;
 export const DECAY_PER_S = 0.08;
 /** Activity gained per pixel of wheel travel: a single notch is enough to start effects. */
 export const ACTIVITY_GAIN = 0.006;
-/** Activity lost per second: it's gone about half a second after your last scroll. */
-export const ACTIVITY_DECAY_PER_S = 2.2;
+/** Activity lost per second: it fades out over about three seconds after your last scroll. */
+export const ACTIVITY_DECAY_PER_S = 0.35;
 /** Below this you're not spinning it: no new sparks or arcs. */
 export const ACTIVE_THRESHOLD = 0.05;
 /** How quickly the visible level follows the real one, per second. */
@@ -72,12 +73,4 @@ export function arcRate(shown: number, activity: number): number {
 /** Sparks per second thrown off the core, on the same terms as the arcs. */
 export function sparkRate(shown: number, activity: number): number {
   return activity < ACTIVE_THRESHOLD ? 0 : activity * (6 + Math.pow(shown, 1.2) * 50);
-}
-
-/**
- * How fast live sparks and arcs age: normal while spinning, up to three times faster once you
- * stop, so the ones already out burn off promptly instead of hanging around.
- */
-export function burnRate(activity: number): number {
-  return 1 + (1 - Math.min(1, activity / ACTIVE_THRESHOLD / 4)) * 2;
 }

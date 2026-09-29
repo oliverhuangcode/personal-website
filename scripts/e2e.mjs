@@ -230,11 +230,18 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
     await hp.waitForTimeout(1500);
     if ((await energy()) < 0.2) fail.push("scrolling did not wind up the home spike");
 
-    // Effects outside the device stop once you stop spinning; the charge (glow) lingers.
-    const activity = async () => Number(await canvas.getAttribute("data-activity"));
-    await hp.waitForTimeout(6000);
-    if ((await activity()) > 0.05) fail.push("home spike effects kept spawning after scrolling stopped");
-    if ((await energy()) < 0.1) fail.push("home spike charge drained immediately instead of lingering");
+    // Effects outside the device fade out once you stop spinning; the charge (glow) outlasts them.
+    // Polled rather than a fixed wait: the fade runs on scene time, which a slow software
+    // renderer advances far more slowly than the wall clock.
+    const quiet = await hp
+      .waitForFunction(() => Number(document.querySelector("main canvas")?.getAttribute("data-activity")) <= 0.05, null, {
+        timeout: 90000,
+        polling: 500,
+      })
+      .then(() => true)
+      .catch(() => false);
+    if (!quiet) fail.push("home spike effects kept spawning after scrolling stopped");
+    if ((await energy()) < 0.1) fail.push("home spike charge drained along with the effects instead of lingering");
   }
 
   // The hero text can't be selected: a drag while spinning mustn't paint over the name.
