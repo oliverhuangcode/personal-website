@@ -42,3 +42,6 @@ next-env.d.ts
 
 # generated audio previews
 /sfx-preview/
+
+# Impeccable design hook: machine-local by design
+.claude/settings.local.json

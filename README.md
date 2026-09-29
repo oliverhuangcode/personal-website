@@ -12,8 +12,9 @@ and an interactive SVG globe.
   No component library: the design is entirely bespoke, so one would only get in the way.
 - **next/font** self-hosts Bebas Neue, Chakra Petch and Azeret Mono — no layout shift, no
   requests to Google.
-- No animation library. Everything is CSS keyframes plus one `requestAnimationFrame` tween
-  for the globe.
+- **Three.js** for the two 3D scenes (the home spike and the travel globe), imported on demand
+  so it stays out of every other page and out of first paint. Everything else is CSS keyframes
+  plus a `requestAnimationFrame` tween for the globe. No animation library.
 
 ## Commands
 
@@ -67,10 +68,47 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   worth remembering if one ever gets long.
 - **State is never carried by colour alone.** Selected items also carry a filled block or a
   word, and planned trips say `PLANNED` in text. Keep it that way.
-- **The globe** is an orthographic projection re-generated every frame. Coastlines are drawn
-  stroke-only; if you ever switch to filled land you must close partial rings along the limb
-  with SVG arc commands. The coastline data is Natural Earth 1:110m (public domain) via
-  `world-atlas`, so the prototype's hand-authored `land.js` is gone.
+- **The globe** is a real Three.js sphere. Coastlines and the graticule are line segments on its
+  surface (`lib/globe/sphere.ts`, unit tested), and depth testing hides the far side, so there is
+  no horizon clipping to get right. Drag and the fly-to tween steer the group's rotation.
+  The marker's click target is a real `<button>` laid over the canvas and repositioned each
+  frame, so it is keyboard-reachable; it is hidden while the marker is on the far side. The
+  coastline data is Natural Earth 1:110m (public domain) via `world-atlas`.
+- **The home spike** is a detailed Three.js model in the spirit of Valorant's Spike
+  (`lib/holo/model.ts`, unit tested): a three-tier armoured base with plates, vents, bolts and a
+  row of light cells; three claws with twin pistons; a glass chamber around an energy core with
+  rising energy rings, a helix and a hot filament; a segmented casing ring that rides up as it
+  charges; braced struts with glowing channels; cables; and a crown with horns and an emitter.
+  Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. The finish is
+  stylised rather than photoreal: matte painted gunmetal with a faint world-space wear pattern,
+  satin trim and polymer, soft fill lighting with almost no environment reflection, and only
+  a faint accent rim, since the light comes from inside.
+  **Motion:** at rest the spike is a dark silhouette behind the name, so the name leads.
+  Scrolling (or a vertical swipe on a phone) spins it and drives two separate signals
+  (`lib/holo/energy.ts`, unit tested). **Charge** builds with every scroll and drains over about
+  twelve seconds; it brightens the core, its glow and the bloom, so it feels like charging up.
+  **Activity** says you're spinning it right now and eases out over about three seconds after
+  your last scroll. Sparks from the core and bolts of soft lightning spawn in proportion to it,
+  more of them the higher the charge, so when you stop they thin out and fade rather than cut
+  off. Each bolt zigzags between random kinks that re-jolt 14 times a second, with one or two
+  thinner forks branching off; it's drawn as a camera-facing ribbon with a soft bright line and
+  halo (lavender to deep purple), so it reads thicker and gentler than real lightning. The light lives
+  inside the core: the core's point lights are short range, and the outer shell stays dark and
+  matte. Mechanical parts (energy rings, helix, the casing ring riding up and down) move on
+  their own; there's no heartbeat, flare or floor ring. The canvas publishes `data-energy` and
+  `data-activity` for tests. The additive shaders write opacity equal to their brightness: the canvas is
+  transparent, and full opacity on faint edges showed up as dark smudges over the page. Bloom is scaled to the spike's
+  on-screen size so it can't wash out the name on phones. The hero text is `select-none`, since
+  drags there spin the spike. The flat canvas fallback (no WebGL) still draws the older design
+  from the
+  simpler part list in `lib/holo/spike.ts`.
+  **Startup:** on a first visit the scene is built only after the boot intro ends, and shaders
+  are compiled with `compileAsync` before the first frame, then the canvas fades in. Building it
+  during the intro froze the main thread and stuttered the intro. Keep heavy scene work out of
+  that window.
+- **Both scenes fall back to the earlier flat drawings** (`HoloCore2D`, `Globe2D`) if WebGL or
+  the Three.js chunk is unavailable, rather than going blank. The e2e suite checks this by
+  launching with WebGL disabled. Delete the 2D files if you would rather not maintain them.
 - **The boot screen** plays once per session and is skipped entirely under
   `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
   so returning visitors never see a flash of it. Add **`?boot`** to any URL to replay it

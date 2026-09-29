@@ -45,7 +45,10 @@ console.log("boot visible on reload (should be false):", await p.locator(".boot-
 // 4. Globe drag rotates, and the marker tween recentres it
 await p.goto(base + "/travel");
 await p.waitForTimeout(600);
-const pathD = () => p.locator("svg path").nth(1).getAttribute("d");
+// The 3D globe publishes where it is looking, so tests need no pixel-peeking.
+const globe = p.locator("[data-renderer]");
+const pathD = async () => `${await globe.getAttribute("data-lon")},${await globe.getAttribute("data-lat")}`;
+if ((await globe.getAttribute("data-renderer")) !== "webgl") fail.push("globe is not using WebGL");
 const before = await pathD();
 const box = await p.getByRole("img", { name: /Globe/ }).boundingBox();
 await p.mouse.move(box.x + 150, box.y + 150);
@@ -57,17 +60,17 @@ const dragged = await pathD();
 if (dragged === before) fail.push("globe drag did not rotate");
 
 // selecting the same trip again re-centres after a drag
-await p.getByRole("button", { name: /HONOLULU/ }).click();
+await p.getByRole("button", { name: /^\d{3} HONOLULU/ }).click();
 await p.waitForTimeout(1100);
 const recentred = await pathD();
 if (recentred === dragged) fail.push("re-selecting current trip did not recentre");
 if (recentred !== before) fail.push("recentre did not return to the original view");
 
 // 5. A tap on the marker still registers as a click (not swallowed by drag capture)
-await p.getByRole("button", { name: /JAPAN/ }).click();
+await p.getByRole("button", { name: /^\d{3} JAPAN/ }).click();
 await p.waitForTimeout(1000);
 const beforeTap = await pathD();
-const marker = await p.locator("svg rect.fill-accent").boundingBox();
+const marker = await p.getByRole("button", { name: /Centre the globe on JAPAN/ }).boundingBox();
 await p.mouse.click(marker.x + marker.width / 2, marker.y + marker.height / 2);
 await p.waitForTimeout(900);
 if ((await pathD()) !== beforeTap) fail.push("marker tap moved the globe unexpectedly");
@@ -94,7 +97,8 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
   if ((await boot.evaluate((el) => getComputedStyle(el).pointerEvents)) !== "none") {
     fail.push("boot overlay intercepts pointer events");
   }
-  const gd = () => bp.locator('[role="img"] path').nth(1).getAttribute("d");
+  const bg = bp.locator("[data-renderer]");
+  const gd = async () => `${await bg.getAttribute("data-lon")},${await bg.getAttribute("data-lat")}`;
   const before = await gd();
   const box = await bp.getByRole("img", { name: /Globe/ }).boundingBox();
   const cx = box.x + box.width / 2;
@@ -195,6 +199,69 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
   await rp.waitForTimeout(500);
   if (await rp.locator(".boot-screen").isVisible()) fail.push("?boot overrode prefers-reduced-motion");
   await rm.close();
+}
+
+// 11. The home spike is a real WebGL scene, draws something, and moves
+{
+  const hp = await (await b.newContext({ viewport: { width: 1360, height: 880 } })).newPage();
+  await hp.goto(base + "/");
+  // The scene starts after the boot intro and fades in once its shaders are compiled.
+  const canvas = hp.locator("canvas[data-renderer]");
+  const ready = await hp
+    .waitForSelector("canvas[data-ready]", { timeout: 20000 })
+    .then(() => true)
+    .catch(() => false);
+  await hp.waitForTimeout(700);
+  if (!ready || (await canvas.count()) !== 1) fail.push("home spike did not start a WebGL canvas");
+  else {
+    const shot = () => canvas.screenshot({ type: "png" });
+    const a = await shot();
+    await hp.waitForTimeout(700);
+    const c = await shot();
+    if (Buffer.compare(a, c) === 0) fail.push("home spike is not animating");
+    if (a.length < 5000) fail.push("home spike canvas looks empty");
+
+    // It rests dim, and scrolling winds it up.
+    const energy = async () => Number(await canvas.getAttribute("data-energy"));
+    await hp.waitForTimeout(400);
+    if ((await energy()) > 0.02) fail.push("home spike is not at rest before any scrolling");
+    await hp.mouse.move(700, 440);
+    for (let i = 0; i < 12; i++) await hp.mouse.wheel(0, 120);
+    await hp.waitForTimeout(1500);
+    if ((await energy()) < 0.2) fail.push("scrolling did not wind up the home spike");
+
+    // Effects outside the device fade out once you stop spinning; the charge (glow) outlasts them.
+    // Polled rather than a fixed wait: the fade runs on scene time, which a slow software
+    // renderer advances far more slowly than the wall clock.
+    const quiet = await hp
+      .waitForFunction(() => Number(document.querySelector("main canvas")?.getAttribute("data-activity")) <= 0.05, null, {
+        timeout: 90000,
+        polling: 500,
+      })
+      .then(() => true)
+      .catch(() => false);
+    if (!quiet) fail.push("home spike effects kept spawning after scrolling stopped");
+    if ((await energy()) < 0.1) fail.push("home spike charge drained along with the effects instead of lingering");
+  }
+
+  // The hero text can't be selected: a drag while spinning mustn't paint over the name.
+  await hp.locator("h1").click({ clickCount: 3 });
+  if (await hp.evaluate(() => String(window.getSelection()).trim().length > 0)) fail.push("home hero text is selectable");
+  await hp.close();
+}
+
+// 12. Without WebGL both scenes fall back to the flat drawings instead of going blank
+{
+  const nb = await chromium.launch({ args: ["--disable-webgl", "--disable-3d-apis", "--disable-gpu"] });
+  const np = await (await nb.newContext({ viewport: { width: 1360, height: 880 } })).newPage();
+  await np.goto(base + "/");
+  await np.waitForTimeout(3600);
+  if ((await np.locator("canvas[data-renderer]").count()) !== 0) fail.push("WebGL not actually disabled for the fallback test");
+  else if ((await np.locator("main canvas").count()) !== 1) fail.push("home has no 2D fallback canvas without WebGL");
+  await np.goto(base + "/travel");
+  await np.waitForTimeout(800);
+  if ((await np.getByRole("img", { name: /Globe/ }).locator("svg").count()) !== 1) fail.push("travel has no SVG globe without WebGL");
+  await nb.close();
 }
 
 console.log(fail.length ? "FAILURES:\n" + fail.join("\n") : "ALL CHECKS PASSED");

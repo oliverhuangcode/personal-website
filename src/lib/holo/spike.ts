@@ -91,21 +91,60 @@ function box(
   return faces;
 }
 
+/**
+ * The device as a list of parts, top to bottom. Both renderers build from this: the flat
+ * canvas turns each part into hard-edged faces (`buildSpike`), the 3D scene into bevelled
+ * meshes.
+ */
+export type Part =
+  | { shape: "prism"; sides: number; rTop: number; rBot: number; y0: number; y1: number; off: number; kind: FaceKind; name: string }
+  | { shape: "box"; ang: number; rad: number; w: number; d: number; y0: number; y1: number; taper: number; kind: FaceKind; name: string };
+
+const P = (name: string, sides: number, rTop: number, rBot: number, y0: number, y1: number, off: number, kind: FaceKind): Part => ({
+  shape: "prism",
+  name,
+  sides,
+  rTop,
+  rBot,
+  y0,
+  y1,
+  off,
+  kind,
+});
+const B = (name: string, ang: number, rad: number, w: number, d: number, y0: number, y1: number, taper: number): Part => ({
+  shape: "box",
+  name,
+  ang,
+  rad,
+  w,
+  d,
+  y0,
+  y1,
+  taper,
+  kind: "shell",
+});
+
+export const SPIKE_PARTS: readonly Part[] = [
+  P("top boss", 3, 0.2, 0.28, -1.26, -1.14, T0, "shell"),
+  P("faceted triangular cap", 3, 0.42, 0.9, -1.14, -0.94, T0, "shell"),
+  P("cap lip", 3, 0.9, 0.66, -0.94, -0.86, T0, "shell"),
+  P("triangular glow column", 3, 0.3, 0.3, -0.86, 0.5, T1, "core"),
+  ...CORNERS.map((a, i) => B(`corner strut ${i + 1}`, a, 0.44, 0.06, 0.07, -0.87, 0.52, 1)),
+  P("mid band", 3, 0.4, 0.4, -0.14, -0.06, T1, "shell"),
+  P("collar taper", 3, 0.5, 0.6, 0.48, 0.62, T0, "shell"),
+  P("thick body", 3, 0.6, 0.74, 0.62, 0.9, T0, "shell"),
+  P("glowing seam", 3, 0.685, 0.685, 0.74, 0.755, T0, "seam"),
+  P("plinth", 3, 0.82, 0.86, 0.9, 1.04, T0, "shell"),
+  ...CORNERS.map((a, i) => B(`wedge foot ${i + 1}`, a, 0.76, 0.14, 0.2, 0.4, 1.04, 0.3)),
+];
+
 /** Every face of the device, top to bottom. */
 export function buildSpike(): Face[] {
-  return [
-    ...prism(3, 0.2, 0.28, -1.26, -1.14, T0, "shell"), // top boss
-    ...prism(3, 0.42, 0.9, -1.14, -0.94, T0, "shell"), // faceted triangular cap
-    ...prism(3, 0.9, 0.66, -0.94, -0.86, T0, "shell"), // cap lip
-    ...prism(3, 0.3, 0.3, -0.86, 0.5, T1, "core"), // triangular glow column
-    ...CORNERS.flatMap((a) => box(a, 0.44, 0.06, 0.07, -0.87, 0.52, 1, "shell")), // corner struts
-    ...prism(3, 0.4, 0.4, -0.14, -0.06, T1, "shell"), // mid band
-    ...prism(3, 0.5, 0.6, 0.48, 0.62, T0, "shell"), // collar taper
-    ...prism(3, 0.6, 0.74, 0.62, 0.9, T0, "shell"), // thick body
-    ...prism(3, 0.685, 0.685, 0.74, 0.755, T0, "seam"), // glowing seam
-    ...prism(3, 0.82, 0.86, 0.9, 1.04, T0, "shell"), // plinth
-    ...CORNERS.flatMap((a) => box(a, 0.76, 0.14, 0.2, 0.4, 1.04, 0.3, "shell")), // wedge feet
-  ];
+  return SPIKE_PARTS.flatMap((p) =>
+    p.shape === "prism"
+      ? prism(p.sides, p.rTop, p.rBot, p.y0, p.y1, p.off, p.kind)
+      : box(p.ang, p.rad, p.w, p.d, p.y0, p.y1, p.taper, p.kind),
+  );
 }
 
 // ── Charge cycle: rest → slow build → peak flare → release ────────────────
