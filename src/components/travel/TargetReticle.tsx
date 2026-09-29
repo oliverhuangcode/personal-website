@@ -71,12 +71,12 @@ export function TargetReticle({
         </g>
       </svg>
       <span
-        className={`absolute top-[calc(50%-13px)] animate-tag drop-shadow-[0_3px_4px_rgb(0_0_0/0.6)] ${
+        className={`absolute top-[calc(50%-13px)] animate-tag drop-shadow-[0_4px_8px_rgb(0_0_0/0.8)] ${
           flip ? "right-full" : "left-full"
         }`}
       >
         <span
-          className={`flex flex-col gap-[3px] border-accent bg-bg/85 px-2 py-[5px] font-mono text-[9px] leading-none tracking-[0.12em] whitespace-nowrap ${
+          className={`flex flex-col gap-1 border-accent bg-panel-raised px-2.5 py-1.5 font-mono text-[10px] leading-none tracking-[0.1em] whitespace-nowrap ${
             flip ? "items-end border-r" : "items-start border-l"
           }`}
           style={{
@@ -85,8 +85,8 @@ export function TargetReticle({
               : "polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)",
           }}
         >
-          <span className="text-ink">{label.toUpperCase()}</span>
-          <span className="text-ink-muted tabular-nums">
+          <span className="text-[11px] font-medium text-title">{label.toUpperCase()}</span>
+          <span className="text-ink-dim tabular-nums">
             {fmt(target.lat, "N", "S")} {fmt(target.lon, "E", "W")}
           </span>
         </span>
