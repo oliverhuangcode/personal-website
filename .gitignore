@@ -48,3 +48,6 @@ next-env.d.ts
 
 # Playwright MCP browser logs/screenshots
 .playwright-mcp/
+
+# photos
+.photo-inbox/
