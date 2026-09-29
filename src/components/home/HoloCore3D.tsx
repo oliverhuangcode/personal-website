@@ -11,25 +11,17 @@ const ACC_RGB = "185,135,255";
 const FOV = 38;
 const MAX_DPR = 2;
 const POOL_SPARKS = 220;
-const ARC_POOL = 10;
-const ARC_SEGMENTS = 32;
+const ARC_POOL = 7;
+const ARC_SEGMENTS = 48;
+/** Half-width of an arc ribbon in model units: room for the smoky flame around the core line. */
+const ARC_HALF_WIDTH = 0.13;
 const TAU = Math.PI * 2;
-/**
- * Arc ribbon layers, widest and faintest first: [width in px at S = 130, alpha, tint].
- * Bloom supplies the wide, soft falloff, so only the body and hot core are drawn.
- */
-const ARC_LAYERS = [
-  [10, 0.1, "acc"],
-  [5, 0.28, "acc"],
-  [2.6, 0.6, "mid"],
-  [1.2, 0.85, "hot"],
-] as const;
-const TINT = { acc: [185, 135, 255], mid: [236, 220, 255], hot: [255, 250, 255] } as const;
 
 /**
- * A crackle of light around the device: it snaps into being at a random height and radius, on
- * a random tilt, whips round in either direction for a fraction of a second, and dies. Its path
- * jitters and its brightness flickers, so a burst of them reads as energy, not an orbit.
+ * A swirl of light around the device, like a ring of fire: a thin bright core line wrapped in
+ * wispy flame that drifts along it, violet at the head burning to orange at the tail. Each one
+ * appears at a random radius, height and tilt, sweeps round in either direction for a second
+ * or two, and fades.
  */
 interface Arc {
   live: boolean;
@@ -45,31 +37,72 @@ interface Arc {
   life: number;
   max: number;
   seed: number;
-  amp: number;
 }
 
 function newArc(): Arc {
   return {
     live: true,
-    r: 0.62 + Math.random() * 0.42,
-    y: -0.65 + Math.random() * 1.35,
-    tilt: (Math.random() - 0.5) * 1.1,
+    r: 0.7 + Math.random() * 0.36,
+    y: -0.5 + Math.random() * 1.15,
+    tilt: (Math.random() - 0.5) * 0.9,
     node: Math.random() * TAU,
     a: Math.random() * TAU,
-    w: (Math.random() < 0.5 ? -1 : 1) * (2.5 + Math.random() * 6.5),
-    span: 0.5 + Math.random() * 1.8,
+    w: (Math.random() < 0.5 ? -1 : 1) * (1.3 + Math.random() * 2),
+    span: 1.5 + Math.random() * 2.2,
     life: 0,
-    max: 0.18 + Math.random() * 0.55,
-    seed: Math.random() * 1000,
-    amp: 0.6 + Math.random() * 0.5,
+    max: 1 + Math.random() * 1.4,
+    seed: Math.random() * 100,
   };
 }
 
-/** Cheap deterministic noise in [0, 1). */
-const hash = (x: number) => {
-  const v = Math.sin(x * 127.1) * 43758.5453;
-  return v - Math.floor(v);
-};
+const ARC_VERT = /* glsl */ `
+  attribute vec3 aInfo;
+  attribute float aAlpha;
+  varying vec3 vInfo;
+  varying float vAlpha;
+  void main() {
+    vInfo = aInfo;
+    vAlpha = aAlpha;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+/** vInfo: x = along the arc (0 head → 1 tail), y = across (0–1, core at 0.5), z = seed. */
+const ARC_FRAG = /* glsl */ `
+  uniform float uTime;
+  varying vec3 vInfo;
+  varying float vAlpha;
+  float h(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float n(vec2 p) {
+    vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(h(i), h(i + vec2(1.0, 0.0)), f.x), mix(h(i + vec2(0.0, 1.0)), h(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+  float fbm(vec2 p) {
+    float s = 0.0; float a = 0.5;
+    for (int i = 0; i < 4; i++) { s += a * n(p); p *= 2.07; a *= 0.5; }
+    return s;
+  }
+  void main() {
+    float u = vInfo.x;
+    float d = abs(vInfo.y * 2.0 - 1.0);
+    float seed = vInfo.z;
+    // The core: a thin, hot line.
+    float core = smoothstep(0.07, 0.0, d) + smoothstep(0.22, 0.0, d) * 0.25;
+    // The flame: turbulent wisps that lick outward from the core and drift along the arc. Two
+    // octave bands, one broad and slow, one fine and fast, so it reads as smoke, not blur.
+    float broad = fbm(vec2(u * 7.0 + seed - uTime * 0.7, d * 2.2 - uTime * 1.4 + seed));
+    float fine = fbm(vec2(u * 23.0 - uTime * 2.1 + seed * 3.0, d * 6.0 - uTime * 3.0));
+    float flame = broad * 0.7 + fine * 0.45;
+    float reach = d - (flame - 0.45) * 1.25;
+    float smoke = smoothstep(0.9, 0.05, reach) * smoothstep(0.02, 0.35, flame);
+    // Fade in at the head, burn out toward the tail.
+    float along = smoothstep(0.0, 0.06, u) * smoothstep(1.0, 0.55, u);
+    vec3 violet = vec3(0.52, 0.4, 1.0);
+    vec3 ember = vec3(1.0, 0.48, 0.16);
+    vec3 col = mix(violet, ember, smoothstep(0.25, 0.85, u));
+    vec3 c = col * smoke * 1.25 + mix(col, vec3(1.0), 0.6) * core * 1.2;
+    gl_FragColor = vec4(c * along * vAlpha, 1.0);
+  }
+`;
 
 /** How many to spawn this frame when `expected` are due on average. */
 function spawnCount(expected: number): number {
@@ -164,7 +197,7 @@ interface HoloCore3DProps {
 /**
  * The home page's holographic spike as a real 3D scene: a detailed device that rests as a
  * dim silhouette behind the name. Scrolling (or swiping) spins it and winds it up: it slowly
- * brightens, throws sparks off its core, and arcs of light start crackling around it; stop and
+ * brightens, throws sparks off its core, and arcs of fire start swirling around it; stop and
  * it runs back down. The pointer tilts the camera. Under reduced motion it renders one still
  * frame at rest.
  *
@@ -215,7 +248,8 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const pmrem = new T.PMREMGenerator(renderer);
       const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
       scene.environment = envTex;
-      scene.environmentIntensity = 0.32;
+      // Low: a matte, stylised finish wants soft fill, not mirror reflections.
+      scene.environmentIntensity = 0.16;
 
       // ── The device ────────────────────────────────────────────────────
       const model = buildSpikeModel();
@@ -235,7 +269,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       // Accent rim from behind, so the silhouette separates from the dark page.
       const rimLight = new T.DirectionalLight(ACC_HEX, 1.5);
       rimLight.position.set(3, 1.5, -3);
-      scene.add(key, rimLight, new T.HemisphereLight(0x8a86a0, 0x08070c, 0.15));
+      scene.add(key, rimLight, new T.HemisphereLight(0x9a94b8, 0x100e18, 0.45));
 
       // Soft contact shadow where the plinth meets the floor: what makes it sit, not float.
       const contactTex = glowTexture(T, [
@@ -275,22 +309,18 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       pool.renderOrder = 1;
       group.add(pool);
 
-      // ── Light ribbons ─────────────────────────────────────────────────
-      // One mesh per flash holding all its layers. Camera-facing quads are rebuilt each frame.
-      const L = ARC_LAYERS.length;
+      // ── Arcs of light ─────────────────────────────────────────────────
+      // One camera-facing ribbon per arc, rebuilt each frame; the flame is drawn in the shader.
       const rowVerts = (ARC_SEGMENTS + 1) * 2;
-      const ribbonIndex = (() => {
-        const idx: number[] = [];
-        for (let l = 0; l < L; l++) {
-          for (let k = 0; k < ARC_SEGMENTS; k++) {
-            const a = l * rowVerts + k * 2;
-            idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
-          }
-        }
-        return idx;
-      })();
-      const ribbonMat = new T.MeshBasicMaterial({
-        vertexColors: true,
+      const ribbonIndex: number[] = [];
+      for (let k = 0; k < ARC_SEGMENTS; k++) {
+        const a = k * 2;
+        ribbonIndex.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+      const ribbonMat = new T.ShaderMaterial({
+        vertexShader: ARC_VERT,
+        fragmentShader: ARC_FRAG,
+        uniforms: { uTime: { value: 0 } },
         transparent: true,
         blending: T.AdditiveBlending,
         depthWrite: false,
@@ -299,8 +329,9 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const arcs: Arc[] = Array.from({ length: ARC_POOL }, () => ({ ...newArc(), live: false }));
       const ribbons = arcs.map(() => {
         const geo = new T.BufferGeometry();
-        geo.setAttribute("position", new T.BufferAttribute(new Float32Array(L * rowVerts * 3), 3));
-        geo.setAttribute("color", new T.BufferAttribute(new Float32Array(L * rowVerts * 4), 4));
+        geo.setAttribute("position", new T.BufferAttribute(new Float32Array(rowVerts * 3), 3));
+        geo.setAttribute("aInfo", new T.BufferAttribute(new Float32Array(rowVerts * 3), 3));
+        geo.setAttribute("aAlpha", new T.BufferAttribute(new Float32Array(rowVerts), 1));
         geo.setIndex(ribbonIndex);
         const m = new T.Mesh(geo, ribbonMat);
         m.frustumCulled = false;
@@ -427,7 +458,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         camPos.copy(camera.position);
         group.worldToLocal(camPos);
 
-        // Arcs crackle into being only once it's spinning, more often the more it's wound up.
+        // Arcs of fire swirl up only once it's spinning, more often the more it's wound up.
         if (!reduced) {
           for (let i = spawnCount(arcRate(shown) * dt); i > 0; i--) {
             const free = arcs.findIndex((a) => !a.live);
@@ -435,9 +466,9 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
             arcs[free] = newArc();
           }
         }
+        ribbonMat.uniforms.uTime.value = t;
         // Each is a camera-facing ribbon (same width from any angle), depth-tested so it passes
-        // behind the device, on a jittering path with a flickering brightness.
-        const tick = Math.floor(t * 30);
+        // behind the device. The path is a smooth tilted circle with a slight breathing wobble.
         arcs.forEach((arc, ai) => {
           const mesh = ribbons[ai];
           if (arc.live && !reduced) {
@@ -448,45 +479,39 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           mesh.visible = arc.live;
           if (!arc.live) return;
 
-          const env = Math.sin((arc.life / arc.max) * Math.PI);
-          const flicker = 0.55 + 0.45 * hash(arc.seed + tick);
-          const inten = env * flicker * arc.amp * (0.55 + shown * 0.6);
+          const k01 = arc.life / arc.max;
+          const inten = Math.sin(k01 * Math.PI) * (0.6 + shown * 0.5);
           const dir = Math.sign(arc.w);
           const pos = mesh.geometry.getAttribute("position") as THREE.BufferAttribute;
-          const col = mesh.geometry.getAttribute("color") as THREE.BufferAttribute;
+          const info = mesh.geometry.getAttribute("aInfo") as THREE.BufferAttribute;
+          const alpha = mesh.geometry.getAttribute("aAlpha") as THREE.BufferAttribute;
           const cl: number[] = [];
           for (let k = 0; k <= ARC_SEGMENTS; k++) {
             const u = k / ARC_SEGMENTS;
             const ang = arc.a - dir * u * arc.span;
-            // Jagged, re-rolled 30 times a second, so the arc crackles rather than glides.
-            const jag = (hash(arc.seed + k * 7.3 + tick) - 0.5) * 0.07;
-            const rr = arc.r + jag;
-            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr + (hash(arc.seed + k * 3.1 + tick * 1.7) - 0.5) * 0.05;
+            const rr = arc.r + Math.sin(u * 5 + arc.seed + t * 1.3) * 0.012;
+            const yy = arc.y + Math.sin(ang - arc.node) * arc.tilt * rr;
             cl.push(Math.cos(ang) * rr, yy, Math.sin(ang) * rr);
           }
           for (let k = 0; k <= ARC_SEGMENTS; k++) {
             const u = k / ARC_SEGMENTS;
-            // Rounded head, soft tail.
-            const shape = Math.min(1, u * 10) * Math.pow(1 - u, 1.4);
             const a = Math.max(0, k - 1) * 3;
             const b = Math.min(ARC_SEGMENTS, k + 1) * 3;
             tmpA.set(cl[b] - cl[a], cl[b + 1] - cl[a + 1], cl[b + 2] - cl[a + 2]); // tangent
             viewLocal.set(camPos.x - cl[k * 3], camPos.y - cl[k * 3 + 1], camPos.z - cl[k * 3 + 2]);
             side.crossVectors(tmpA, viewLocal).normalize();
-            for (let l = 0; l < L; l++) {
-              const [w, al, tint] = ARC_LAYERS[l];
-              const half = (w / 130) * (0.35 + 0.65 * shape) * 0.5;
-              const v = l * rowVerts + k * 2;
-              tmpB.set(cl[k * 3], cl[k * 3 + 1], cl[k * 3 + 2]);
-              pos.setXYZ(v, tmpB.x + side.x * half, tmpB.y + side.y * half, tmpB.z + side.z * half);
-              pos.setXYZ(v + 1, tmpB.x - side.x * half, tmpB.y - side.y * half, tmpB.z - side.z * half);
-              const [r, g, bl] = TINT[tint];
-              const alpha = al * shape * inten;
-              col.setXYZW(v, r / 255, g / 255, bl / 255, alpha);
-              col.setXYZW(v + 1, r / 255, g / 255, bl / 255, alpha);
-            }
+            // Narrows slightly toward the tail, where the flame thins out.
+            const half = ARC_HALF_WIDTH * (1 - u * 0.35);
+            const v = k * 2;
+            tmpB.set(cl[k * 3], cl[k * 3 + 1], cl[k * 3 + 2]);
+            pos.setXYZ(v, tmpB.x + side.x * half, tmpB.y + side.y * half, tmpB.z + side.z * half);
+            pos.setXYZ(v + 1, tmpB.x - side.x * half, tmpB.y - side.y * half, tmpB.z - side.z * half);
+            info.setXYZ(v, u, 0, arc.seed);
+            info.setXYZ(v + 1, u, 1, arc.seed);
+            alpha.setX(v, inten);
+            alpha.setX(v + 1, inten);
           }
-          pos.needsUpdate = col.needsUpdate = true;
+          pos.needsUpdate = info.needsUpdate = alpha.needsUpdate = true;
         });
 
         // Sparks fly out from the core, thicker the more it's wound up.

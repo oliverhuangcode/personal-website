@@ -1,7 +1,7 @@
 /**
  * Spin energy for the 3D spike: scrolling winds it up, and it slowly runs down when you stop.
- * The scene reads it to set brightness, spawn sparks off the core, and let arcs of light start
- * crackling around the device. Pure functions, so the feel can be tuned and tested without a
+ * The scene reads it to set brightness, spawn sparks off the core, and let arcs of fire start
+ * swirling around the device. Pure functions, so the feel can be tuned and tested without a
  * renderer.
  */
 
@@ -39,9 +39,9 @@ export function exposureFor(shown: number): number {
   return 0.55 + shown * 0.55;
 }
 
-/** Arcs of light per second: none at rest, crackling faster as it winds up. */
+/** Swirling arcs per second: none at rest, more often as it winds up. Each lasts 1–2.4s. */
 export function arcRate(shown: number): number {
-  return shown < REST_THRESHOLD ? 0 : 1.2 + shown * 11;
+  return shown < REST_THRESHOLD ? 0 : 0.5 + shown * 2.8;
 }
 
 /** Sparks per second thrown off the core. */

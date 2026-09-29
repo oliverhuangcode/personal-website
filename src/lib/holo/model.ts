@@ -175,20 +175,21 @@ export function buildSpikeModel(): SpikeModel {
   const materials = new Set<THREE.Material>();
   const mat = <M extends THREE.Material>(m: M) => (materials.add(m), m);
 
-  // Armour: lacquered gunmetal with a world-space wear pattern in the roughness, so broad
-  // faces break up into satin and polished patches instead of reading as flat CG plastic.
+  // Armour: matte, painted gunmetal, stylised rather than photoreal. A faint world-space wear
+  // pattern keeps broad faces from reading as flat plastic, and an accent rim light traces the
+  // silhouette the way game art separates a hero object from its background.
   const armour = mat(
-    new THREE.MeshPhysicalMaterial({
-      color: 0x2c2a35,
-      metalness: 0.85,
-      roughness: 0.38,
-      clearcoat: 0.65,
-      clearcoatRoughness: 0.2,
+    new THREE.MeshStandardMaterial({
+      color: 0x34313f,
+      metalness: 0.35,
+      roughness: 0.74,
       emissive: ACC,
       emissiveIntensity: 0,
     }),
   );
+  const rim = { value: 0.2 };
   armour.onBeforeCompile = (shader) => {
+    shader.uniforms.uRim = rim;
     shader.vertexShader = shader.vertexShader
       .replace("#include <common>", "#include <common>\nvarying vec3 vWear;")
       .replace("#include <begin_vertex>", "#include <begin_vertex>\nvWear = position * 9.0;");
@@ -208,11 +209,18 @@ export function buildSpikeModel(): SpikeModel {
         "#include <roughnessmap_fragment>",
         `#include <roughnessmap_fragment>
         float wear = wearNoise(vWear) * 0.6 + wearNoise(vWear * 3.7) * 0.4;
-        roughnessFactor = clamp(roughnessFactor * (0.7 + wear * 0.6), 0.08, 1.0);`,
+        roughnessFactor = clamp(roughnessFactor * (0.85 + wear * 0.3), 0.3, 1.0);`,
+      )
+      .replace("#include <common>", "#include <common>\nuniform float uRim;")
+      .replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>
+        float rimF = pow(1.0 - saturate(dot(normal, normalize(vViewPosition))), 3.0);
+        totalEmissiveRadiance += vec3(0.725, 0.529, 1.0) * rimF * uRim;`,
       );
   };
-  // Bright machined trim for brackets, pistons, bands and bolts.
-  const trim = mat(new THREE.MeshPhysicalMaterial({ color: 0x8d8a9c, metalness: 1, roughness: 0.36, clearcoat: 0.2 }));
+  // Brushed trim for brackets, pistons, bands and bolts: lighter than the armour, but satin.
+  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x7a768c, metalness: 0.55, roughness: 0.55 }));
   // Matte black polymer for cables, vents and pads.
   const polymer = mat(new THREE.MeshStandardMaterial({ color: 0x111016, metalness: 0.1, roughness: 0.72 }));
   // Emissive trims are not tone mapped, so they stay saturated and bloom like a game's light strips.
@@ -513,6 +521,7 @@ export function buildSpikeModel(): SpikeModel {
       hotCol.copy(ACC).lerp(HOT, glow * 0.35);
 
       armour.emissiveIntensity = glow * 0.01;
+      rim.value = 0.15 + glow * 0.45;
       coreMat.uniforms.uTime.value = t;
       coreMat.uniforms.uCharge.value = glow;
       glassMat.uniforms.uGlow.value = glow;

@@ -79,15 +79,17 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   row of light cells; three claws with twin pistons; a glass chamber around an energy core with
   rising energy rings, a helix and a hot filament; a segmented casing ring that rides up as it
   charges; braced struts with glowing channels; cables; and a crown with horns and an emitter.
-  Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. Materials are
-  lacquered gunmetal with a world-space wear pattern in the roughness, machined trim and matte
-  polymer, lit by a studio environment map with ACES tone mapping, soft shadows and bloom.
+  Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. The finish is
+  stylised rather than photoreal: matte painted gunmetal with a faint world-space wear pattern,
+  satin trim and polymer, soft fill lighting with only a little environment reflection, and an
+  accent rim light tracing the silhouette, as game art does.
   **Motion:** at rest the spike is a dim silhouette behind the name, so the name leads. Scrolling
   (or a vertical swipe on a phone) spins it and winds up an energy level (`lib/holo/energy.ts`,
   unit tested): the device and scene exposure slowly brighten, sparks fly out from the core, and
-  arcs of light start crackling around it, each at a random radius, height, tilt, speed and
-  direction, on a jittering path with a flickering brightness. None of those appear until you
-  spin it. Stop, and it runs back down over about twenty seconds. Mechanical parts (energy rings,
+  swirling arcs of fire start sweeping around it: a thin hot core line wrapped in wispy flame
+  (an fbm shader on a camera-facing ribbon) that burns from violet at the head to orange at
+  the tail, each at a random radius, height, tilt, speed and direction. None of those appear
+  until you spin it. Stop, and it runs back down over about twenty seconds. Mechanical parts (energy rings,
   helix, the casing ring riding up and down) move on their own; there's no heartbeat, flare or
   floor ring. The canvas publishes `data-energy` for tests. Bloom is scaled to the spike's
   on-screen size so it can't wash out the name on phones. The hero text is `select-none`, since
