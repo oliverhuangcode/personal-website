@@ -75,7 +75,7 @@ describe("buildSpikeModel", () => {
     const model = buildSpikeModel();
     const lights = () =>
       model.group.children
-        .filter((o): o is THREE.Mesh => /^(light cell|glowing seam|emitter)/.test(o.name))
+        .filter((o): o is THREE.Mesh => /^(light cell|glowing seam)/.test(o.name))
         .map((c) => (c.material as THREE.MeshBasicMaterial).color.getHex());
     model.update(frame({ t: 0.3 }));
     const a = lights();

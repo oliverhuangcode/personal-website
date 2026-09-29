@@ -9,8 +9,8 @@ import type { Part } from "./spike";
  * Spike. Armoured base on three clawed feet, a glass chamber holding an energy core, a
  * casing ring that rises as it charges, braced struts, cables, and a crowned cap.
  *
- * World units, y up. The floor is at y = −1.04 and the emitter tops out near 1.33, the same
- * envelope as the flat drawing in `spike.ts`, so the page layout does not move.
+ * World units, y up. The floor is at y = −1.04 and the crown boss tops out at 1.26, inside
+ * the envelope of the flat drawing in `spike.ts`, so the page layout does not move.
  *
  * The glow level comes in from outside (the scene raises it as you spin the device); only
  * mechanical parts move on their own (energy rings climbing the core, the helix, the casing
@@ -232,7 +232,6 @@ export function buildSpikeModel(): SpikeModel {
   const seamMat = mat(new THREE.MeshBasicMaterial({ color: ACC, toneMapped: false }));
   const channelMat = mat(new THREE.MeshBasicMaterial({ color: ACC, toneMapped: false }));
   const underglowMat = mat(new THREE.MeshBasicMaterial({ color: ACC, toneMapped: false }));
-  const emitterMat = mat(new THREE.MeshBasicMaterial({ color: HOT, toneMapped: false }));
   const filamentMat = mat(new THREE.MeshBasicMaterial({ color: HOT, toneMapped: false }));
   const coreMat = mat(
     new THREE.ShaderMaterial({
@@ -471,8 +470,6 @@ export function buildSpikeModel(): SpikeModel {
   const CROWN = { rBot: 0.9, rTop: 0.42, yBot: 0.94, yTop: 1.14 };
   add(prism(3, CROWN.rBot, CROWN.rTop, CROWN.yBot, CROWN.yTop), armour, "crown");
   add(prism(3, 0.28, 0.2, 1.14, 1.26), armour, "crown boss");
-  add(new THREE.CylinderGeometry(0.075, 0.09, 0.05, 32), trim, "emitter housing").position.y = 1.285;
-  add(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 32), emitterMat, "emitter", false).position.y = 1.315;
 
   // Down-swept horns at the crown's corners.
   CORNERS.forEach((a, i) =>
@@ -533,7 +530,6 @@ export function buildSpikeModel(): SpikeModel {
       coreMat.uniforms.uCharge.value = glow;
       glassMat.uniforms.uGlow.value = glow;
       filamentMat.color.copy(HOT).multiplyScalar(0.35 + glow * 0.4);
-      emitterMat.color.copy(HOT).multiplyScalar(0.35 + glow * 0.5);
       seamMat.color.copy(hotCol).multiplyScalar(0.4 + glow * 0.45);
       underglowMat.color.copy(hotCol).multiplyScalar(0.25 + glow * 0.35);
       channelMat.color.copy(hotCol).multiplyScalar(0.3 + glow * 0.4);
