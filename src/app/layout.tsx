@@ -10,8 +10,9 @@ import { KeyboardNav } from "@/components/site/KeyboardNav";
 import "./globals.css";
 
 const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--font-bebas" });
+// Body text only ever uses 400; each extra weight is another font file on first load.
 const chakra = Chakra_Petch({
-  weight: ["400", "600", "700"],
+  weight: "400",
   subsets: ["latin"],
   variable: "--font-chakra",
 });

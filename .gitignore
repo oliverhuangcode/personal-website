@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Impeccable design hook: machine-local by design
 .claude/settings.local.json
+
+# Playwright MCP browser logs/screenshots
+.playwright-mcp/

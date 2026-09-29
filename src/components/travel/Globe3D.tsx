@@ -188,6 +188,8 @@ export function Globe3D({
         if (!W && !resize()) return;
         globe.updateMatrixWorld(true);
         renderer.render(scene, camera);
+        // First frame is up: fade the canvas in and reveal the markers, now they're in place.
+        if (!("ready" in wrap.dataset)) requestAnimationFrame(() => (wrap.dataset.ready = ""));
 
         // Park the real buttons over their markers.
         setFlip(place(marker, markerGroup.getWorldPosition(spot), MARKER_PX) > 0.1);
@@ -225,6 +227,19 @@ export function Globe3D({
       setCentreView(centreRef.current);
       wrap.dataset.lon = centreRef.current.lon.toFixed(2);
       wrap.dataset.lat = centreRef.current.lat.toFixed(2);
+
+      // Compile shaders before the first frame (off the main thread where supported), so the
+      // globe doesn't hitch as it appears.
+      try {
+        await renderer.compileAsync(scene, camera);
+      } catch {
+        // Older drivers: the first render compiles synchronously instead.
+      }
+      if (cancelled) {
+        apiRef.current = null;
+        renderer.dispose();
+        return;
+      }
 
       const ro = new ResizeObserver(() => {
         if (resize()) invalidate();
@@ -323,9 +338,19 @@ export function Globe3D({
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
-      className="relative aspect-square w-full max-w-[300px] cursor-grab touch-none select-none"
+      className="group/globe relative aspect-square w-full max-w-[300px] cursor-grab touch-none select-none"
     >
-      <canvas ref={canvasRef} role="img" aria-label={`Globe showing ${label}. Drag to spin.`} className="block size-full" />
+      {/* Stand-in sphere while Three.js loads, so the space isn't empty; fades as the globe fades in. */}
+      <div
+        aria-hidden
+        className="absolute inset-[3.5%] rounded-full border border-hairline bg-[#0f0e14] transition-opacity duration-500 group-data-ready/globe:opacity-0"
+      />
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={`Globe showing ${label}. Drag to spin.`}
+        className="relative block size-full opacity-0 transition-opacity duration-500 ease-out group-data-ready/globe:opacity-100"
+      />
       {destinations.map((d, i) =>
         i === index ? null : (
           <button
@@ -337,7 +362,7 @@ export function Globe3D({
             aria-label={`Show ${d.label}`}
             onClick={() => onSelect?.(i)}
             style={{ width: DOT_PX, height: DOT_PX, visibility: "hidden" }}
-            className="group absolute top-0 left-0 cursor-pointer"
+            className="group absolute top-0 left-0 cursor-pointer opacity-0 transition-opacity duration-500 group-data-ready/globe:opacity-100"
           >
             <DestinationMarker visited={d.visited} />
           </button>
@@ -348,8 +373,9 @@ export function Globe3D({
         type="button"
         aria-label={`Centre the globe on ${label}`}
         onClick={onMarkerClick}
-        style={{ width: MARKER_PX, height: MARKER_PX }}
-        className="group absolute top-0 left-0 cursor-pointer"
+        // Hidden until the first frame places it; until then it would sit at the top-left corner.
+        style={{ width: MARKER_PX, height: MARKER_PX, visibility: "hidden" }}
+        className="group absolute top-0 left-0 cursor-pointer opacity-0 transition-opacity duration-500 group-data-ready/globe:opacity-100"
       >
         <TargetReticle
           target={target}
