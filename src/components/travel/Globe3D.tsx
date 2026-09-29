@@ -7,8 +7,8 @@ import { LAND_RINGS } from "@/lib/globe/land";
 import { clampLat, easeInOutCubic, wrapLonDelta } from "@/lib/globe/projection";
 import { faceRotation, graticuleSegments, ringSegments, toVec3 } from "@/lib/globe/sphere";
 
-import type { GlobeProps, LonLatPoint } from "./globe-types";
-import { MARKER_PX, TargetReticle } from "./TargetReticle";
+import type { Destination, GlobeProps, LonLatPoint } from "./globe-types";
+import { DestinationMarker, DOT_PX, MARKER_PX, TargetReticle } from "./TargetReticle";
 
 const FLY_MS = 750;
 const DRAG_DEG_PER_PX = 0.4;
@@ -40,7 +40,18 @@ interface SceneApi {
  * destination. The marker's click target is a real button laid over the canvas, so it
  * is keyboard-reachable and works with assistive tech.
  */
-export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUnsupported }: GlobeProps) {
+const NO_DESTINATIONS: Destination[] = [];
+
+export function Globe3D({
+  target,
+  flyKey,
+  label,
+  index = 0,
+  onMarkerClick,
+  destinations = NO_DESTINATIONS,
+  onSelect,
+  onUnsupported,
+}: GlobeProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const markerRef = useRef<HTMLButtonElement>(null);
@@ -50,6 +61,10 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
   const targetRef = useRef<LonLatPoint>(target);
   const rafRef = useRef(0);
   const dragRef = useRef<DragState | null>(null);
+  // The other destinations' buttons, and what the scene needs to place them.
+  const dotRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const destinationsRef = useRef(destinations);
+  const indexRef = useRef(index);
   // Readout tag side: flips left when the marker is on the right half of the globe.
   const [flip, setFlip] = useState(false);
 
@@ -143,6 +158,19 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
       let running = false;
       const proj = new T.Vector3();
       const worldN = new T.Vector3();
+      const toCamera = new T.Vector3();
+
+      /** Park `el` over `world` (a point on the globe, in world space); hide it on the far side. */
+      const place = (el: HTMLElement, world: THREE.Vector3, size: number) => {
+        worldN.copy(world).normalize();
+        const facing = worldN.dot(toCamera.copy(camera.position).sub(world).normalize());
+        proj.copy(world).project(camera);
+        const h = canvas.clientHeight;
+        el.style.visibility = facing > 0.12 ? "visible" : "hidden";
+        el.style.transform = `translate(${((proj.x + 1) / 2) * W - size / 2}px, ${((1 - proj.y) / 2) * h - size / 2}px)`;
+        return proj.x;
+      };
+      const spot = new T.Vector3();
 
       const resize = () => {
         const dpr = Math.min(MAX_DPR, window.devicePixelRatio || 1);
@@ -161,16 +189,14 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
         globe.updateMatrixWorld(true);
         renderer.render(scene, camera);
 
-        // Park the real button over the marker, and hide it when the marker is on the far side.
-        markerGroup.getWorldPosition(proj);
-        worldN.copy(proj).normalize();
-        const facing = worldN.dot(camera.position.clone().sub(proj).normalize());
-        const shown = facing > 0.12;
-        proj.project(camera);
-        const h = canvas.clientHeight;
-        marker.style.visibility = shown ? "visible" : "hidden";
-        marker.style.transform = `translate(${((proj.x + 1) / 2) * W - MARKER_PX / 2}px, ${((1 - proj.y) / 2) * h - MARKER_PX / 2}px)`;
-        setFlip(proj.x > 0.1);
+        // Park the real buttons over their markers.
+        setFlip(place(marker, markerGroup.getWorldPosition(spot), MARKER_PX) > 0.1);
+        destinationsRef.current.forEach((d, i) => {
+          const el = dotRefs.current[i];
+          if (!el || i === indexRef.current) return;
+          const [x, y, z] = toVec3(d.lon, d.lat, 1);
+          place(el, globe.localToWorld(spot.set(x, y, z)), DOT_PX);
+        });
       };
 
       // Nothing in the scene animates on its own, so draw only when something changed.
@@ -228,6 +254,13 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
       teardown();
     };
   }, [onUnsupported]);
+
+  // Re-place the other markers when the list or the selection changes.
+  useEffect(() => {
+    destinationsRef.current = destinations;
+    indexRef.current = index;
+    apiRef.current?.invalidate();
+  }, [destinations, index]);
 
   // Follow the selected destination.
   useEffect(() => {
@@ -293,6 +326,23 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
       className="relative aspect-square w-full max-w-[300px] cursor-grab touch-none select-none"
     >
       <canvas ref={canvasRef} role="img" aria-label={`Globe showing ${label}. Drag to spin.`} className="block size-full" />
+      {destinations.map((d, i) =>
+        i === index ? null : (
+          <button
+            key={d.label}
+            ref={(el) => {
+              dotRefs.current[i] = el;
+            }}
+            type="button"
+            aria-label={`Show ${d.label}`}
+            onClick={() => onSelect?.(i)}
+            style={{ width: DOT_PX, height: DOT_PX, visibility: "hidden" }}
+            className="group absolute top-0 left-0 cursor-pointer"
+          >
+            <DestinationMarker visited={d.visited} />
+          </button>
+        ),
+      )}
       <button
         ref={markerRef}
         type="button"

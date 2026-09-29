@@ -58,27 +58,16 @@
   --animate-swap: swap 0.16s var(--ease-snap) both;
   --animate-fill: fill 0.7s var(--ease-snap) both;
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Globe target lock: the core pops as the flight lands, the rings close in, the readout wipes on,
-     then square rings radiate out like a radar ping. */
+  /* Globe target lock: the core pops as the flight lands, the readout wipes on, then square
+     rings radiate out like a radar ping. */
   --animate-pop: pop 0.3s var(--ease-snap) 0.35s both;
-  --animate-lock: lock 0.4s var(--ease-snap) 0.45s both;
-  --animate-radar: radar 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  --animate-radar: radar 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   --animate-tag: tag 0.3s var(--ease-snap) 0.7s both;
 
   @keyframes pop {
     from {
       opacity: 0;
       transform: scale(0.3);
-    }
-    to {
-      opacity: 1;
-      transform: none;
-    }
-  }
-  @keyframes lock {
-    from {
-      opacity: 0;
-      transform: scale(1.8);
     }
     to {
       opacity: 1;
@@ -92,7 +81,7 @@
     }
     to {
       opacity: 0;
-      transform: scale(2.6);
+      transform: scale(4);
     }
   }
   @keyframes tag {

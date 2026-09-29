@@ -10,9 +10,8 @@ const C = MARKER_PX / 2;
 const diamond = (r: number) => `M${C} ${C - r}L${C + r} ${C}L${C} ${C + r}L${C - r} ${C}Z`;
 
 /**
- * The destination marker: a radar ping. A solid diamond core in a diamond ring, a faint
- * outer ring, and square rings that radiate out from it, with a readout tag carrying the
- * coordinates. Purely decorative: it sits inside the marker button, which carries the
+ * The selected destination's marker: a radar ping. A solid diamond with square rings
+ * radiating out from just around it, and a readout tag carrying the coordinates. Purely decorative: it sits inside the marker button, which carries the
  * accessible label and a `group` class for hover.
  *
  * `lockKey` replays the lock-on each time a destination is selected; `flip` puts the
@@ -39,32 +38,21 @@ export function TargetReticle({
       className="pointer-events-none absolute inset-0 text-accent transition-colors duration-150 group-hover:text-accent-hover"
     >
       {/* Radar rings: two, half a cycle apart, so one is always on its way out. */}
-      {[0.8, 1.7].map((delay) => (
+      {[0.6, 1.6].map((delay) => (
         <svg
           key={delay}
           viewBox={box}
           className="absolute inset-0 size-full animate-radar overflow-visible opacity-0"
           style={{ animationDelay: `${delay}s` }}
         >
-          <path d={diamond(9)} fill="none" stroke="currentColor" strokeWidth={1} />
+          <path d={diamond(6.5)} fill="none" stroke="currentColor" strokeWidth={1} />
         </svg>
       ))}
-      <svg viewBox={box} className="absolute inset-0 size-full animate-lock overflow-visible">
-        <path
-          d={diamond(16)}
-          fill="var(--color-bg)"
-          fillOpacity={0.45}
-          stroke="currentColor"
-          strokeWidth={1}
-          strokeOpacity={0.35}
-        />
-        <path d={diamond(9)} fill="none" stroke="currentColor" strokeWidth={1.5} />
-      </svg>
       <svg
         viewBox={box}
         className="absolute inset-0 size-full animate-pop overflow-visible drop-shadow-[0_2px_3px_rgb(0_0_0/0.6)]"
       >
-        <path d={diamond(5)} fill="currentColor" />
+        <path d={diamond(5.5)} fill="currentColor" />
       </svg>
       <span
         className={`absolute top-[calc(50%-13px)] animate-tag drop-shadow-[0_3px_4px_rgb(0_0_0/0.6)] ${
@@ -90,5 +78,34 @@ export function TargetReticle({
         </span>
       </span>
     </span>
+  );
+}
+
+/** Hit target for the other destinations' markers, in CSS px. */
+export const DOT_PX = 22;
+
+const D = DOT_PX / 2;
+const dot = (r: number) => `M${D} ${D - r}L${D + r} ${D}L${D} ${D + r}L${D - r} ${D}Z`;
+
+/**
+ * An unselected destination: a white diamond in a thin frame if visited, a dotted outline
+ * if planned. Decorative; it sits inside the button that selects that destination.
+ */
+export function DestinationMarker({ visited }: { visited: boolean }) {
+  return (
+    <svg
+      aria-hidden
+      viewBox={`0 0 ${DOT_PX} ${DOT_PX}`}
+      className="pointer-events-none absolute inset-0 size-full text-ink-dim transition-colors duration-150 group-hover:text-accent-hover"
+    >
+      {visited ? (
+        <>
+          <path d={dot(6)} fill="var(--color-bg)" fillOpacity={0.6} stroke="currentColor" strokeWidth={1} strokeOpacity={0.6} />
+          <path d={dot(3)} fill="var(--color-title)" className="group-hover:fill-accent-hover" />
+        </>
+      ) : (
+        <path d={dot(4)} fill="none" stroke="currentColor" strokeWidth={1} strokeDasharray="1.5 1.5" />
+      )}
+    </svg>
   );
 }

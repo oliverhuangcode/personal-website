@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
@@ -17,6 +17,11 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
   // `seq` re-triggers the globe flight even when re-selecting the current trip after a drag.
   const [selection, setSelection] = useState({ index: 0, seq: 0 });
   const [photoIndex, setPhotoIndex] = useState<number[]>(() => trips.map(() => 0));
+
+  const destinations = useMemo(
+    () => trips.map((t) => ({ lon: t.lon, lat: t.lat, label: t.name, visited: t.status === "VISITED" })),
+    [trips],
+  );
 
   const index = selection.index;
   const trip = trips[index];
@@ -63,6 +68,8 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
           label={trip.name}
           index={index}
           onMarkerClick={() => select(index)}
+          destinations={destinations}
+          onSelect={select}
         />
         <div className="flex items-center gap-2.5 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
           <button type="button" aria-label="Previous destination" onClick={() => cycle(-1)} className={pagerButton}>

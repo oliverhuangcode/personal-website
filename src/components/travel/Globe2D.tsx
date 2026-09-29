@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import type { GlobeProps } from "./globe-types";
-import { MARKER_PX, TargetReticle } from "./TargetReticle";
+import { DestinationMarker, DOT_PX, MARKER_PX, TargetReticle } from "./TargetReticle";
 import { LAND_RINGS } from "@/lib/globe/land";
 import {
   GLOBE_CENTRE,
@@ -41,7 +41,7 @@ interface DragState {
 }
 
 /** Orthographic SVG globe: drag to spin, tweens to the selected destination. */
-export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick }: GlobeProps) {
+export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick, destinations = [], onSelect }: GlobeProps) {
   const ids = useId();
   const seaId = `${ids}-sea`;
   const clipId = `${ids}-clip`;
@@ -187,6 +187,28 @@ export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick }: Glo
           stroke="#332f3d"
         />
       </svg>
+      {destinations.map((d, i) => {
+        if (i === index) return null;
+        const p = project(d.lon, d.lat, centre.lon, centre.lat);
+        if (!p.visible) return null;
+        return (
+          <button
+            key={d.label}
+            type="button"
+            aria-label={`Show ${d.label}`}
+            onClick={() => onSelect?.(i)}
+            style={{
+              width: DOT_PX,
+              height: DOT_PX,
+              left: `calc(${(p.x / GLOBE_SIZE) * 100}% - ${DOT_PX / 2}px)`,
+              top: `calc(${(p.y / GLOBE_SIZE) * 100}% - ${DOT_PX / 2}px)`,
+            }}
+            className="group absolute cursor-pointer"
+          >
+            <DestinationMarker visited={d.visited} />
+          </button>
+        );
+      })}
       {marker.visible && (
         <button
           type="button"
