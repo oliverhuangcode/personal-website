@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import type { GlobeProps } from "./globe-types";
-import { PIN_H, PIN_W, TargetReticle } from "./TargetReticle";
+import { MARKER_PX, TargetReticle } from "./TargetReticle";
 import { LAND_RINGS } from "@/lib/globe/land";
 import {
   GLOBE_CENTRE,
@@ -193,10 +193,10 @@ export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick }: Glo
           aria-label={`Centre the globe on ${label}`}
           onClick={onMarkerClick}
           style={{
-            width: PIN_W,
-            height: PIN_H,
-            left: `calc(${(marker.x / GLOBE_SIZE) * 100}% - ${PIN_W / 2}px)`,
-            top: `calc(${(marker.y / GLOBE_SIZE) * 100}% - ${PIN_H}px)`,
+            width: MARKER_PX,
+            height: MARKER_PX,
+            left: `calc(${(marker.x / GLOBE_SIZE) * 100}% - ${MARKER_PX / 2}px)`,
+            top: `calc(${(marker.y / GLOBE_SIZE) * 100}% - ${MARKER_PX / 2}px)`,
           }}
           className="group absolute cursor-pointer"
         >
