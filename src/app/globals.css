@@ -58,8 +58,7 @@
   --animate-swap: swap 0.16s var(--ease-snap) both;
   --animate-fill: fill 0.7s var(--ease-snap) both;
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
-  /* Globe marker entrance: the core pops as the flight lands, the leader draws out, then the tag wipes on. */
-  --animate-draw: draw 0.25s var(--ease-snap) 0.5s both;
+  /* Globe marker entrance: the core pops as the flight lands, then the callout wipes on. */
   --animate-pop: pop 0.3s var(--ease-snap) 0.35s both;
   --animate-tag: tag 0.3s var(--ease-snap) 0.7s both;
 
@@ -71,14 +70,6 @@
     to {
       opacity: 1;
       transform: none;
-    }
-  }
-  @keyframes draw {
-    from {
-      stroke-dashoffset: 1;
-    }
-    to {
-      stroke-dashoffset: 0;
     }
   }
   @keyframes tag {

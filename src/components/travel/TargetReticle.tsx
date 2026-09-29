@@ -20,11 +20,9 @@ const box = (px: number) => {
 /** Square with half-side `h`, centred on the origin. */
 const square = (h: number) => ({ x: -h, y: -h, width: h * 2, height: h * 2 });
 
-// Leader from the ping to the tag, in px from the marker centre (y is up-negative).
-const LEAD = { elbow: 20, x: 30, y: -16 };
-// Tag outline: top-far and bottom-near corners clipped, mirrored when flipped.
-const CHAMFER = "polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 6px 100%, 0 calc(100% - 6px))";
-const CHAMFER_FLIP = "polygon(8px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 8px)";
+/** Gradient from `from` (a colour-mix stop) at the near edge to transparent at the far edge. */
+const fade = (flip: boolean, from: string, hold: string) =>
+  `linear-gradient(to ${flip ? "left" : "right"}, color-mix(in srgb, ${from}, transparent) ${hold}, transparent)`;
 
 /** A radar ring: a square outline growing from half-side 4 to 16 while fading out. Slower than the spec's 1.4s. */
 function Ring({ begin }: { begin: string }) {
@@ -42,8 +40,7 @@ function Ring({ begin }: { begin: string }) {
 
 /**
  * The selected destination's marker: a radar ping. A solid diamond with two square rings
- * radiating out from it, half a cycle apart, and a callout tag with the name, status and
- * coordinates.
+ * radiating out from it, half a cycle apart, and a callout with the name and coordinates.
  * Purely decorative: it sits inside the marker button, which carries the accessible label
  * and a `group` class for hover.
  *
@@ -53,14 +50,11 @@ function Ring({ begin }: { begin: string }) {
 export function TargetReticle({
   target,
   label,
-  visited,
   lockKey,
   flip,
 }: {
   target: LonLatPoint;
   label: string;
-  /** Shown as a status chip; omitted when unknown. */
-  visited?: boolean;
   lockKey: number;
   flip: boolean;
 }) {
@@ -80,46 +74,34 @@ export function TargetReticle({
           <rect {...square(3.5)} fill="currentColor" className="origin-center animate-pop [transform-box:fill-box]" />
         </g>
       </svg>
-      {/* Callout: an elbowed leader draws out from the ping, then the tag wipes on at its end. */}
-      <span className={`absolute top-1/2 ${flip ? "right-1/2 -scale-x-100" : "left-1/2"}`}>
-        <svg width={LEAD.x + 1} height={-LEAD.y + 1} viewBox={`0 ${LEAD.y} ${LEAD.x + 1} ${-LEAD.y + 1}`} className="absolute top-0 left-0 -translate-y-full overflow-visible">
-          <path
-            d={`M9 -5L${LEAD.elbow} ${LEAD.y}H${LEAD.x}`}
-            pathLength={1}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1}
-            className="animate-draw [stroke-dasharray:1]"
-          />
-          <rect x={LEAD.x - 1} y={LEAD.y - 1} width={2} height={2} fill="currentColor" className="animate-tag" />
-        </svg>
-      </span>
+      {/* Callout, Valorant-style: no box, just a dark strip fading out behind the text, a
+          slanted accent bar on the near edge and a hairline across the top. */}
       <span
-        className={`absolute animate-tag drop-shadow-[0_4px_8px_rgb(0_0_0/0.8)] ${
-          flip ? "right-[calc(50%+var(--lead-x))]" : "left-[calc(50%+var(--lead-x))]"
+        className={`absolute top-1/2 -translate-y-1/2 animate-tag ${
+          flip ? "right-[calc(50%+16px)]" : "left-[calc(50%+16px)]"
         }`}
-        style={{ "--lead-x": `${LEAD.x}px`, top: `calc(50% + ${LEAD.y}px)`, transform: "translateY(-50%)" } as React.CSSProperties}
       >
         <span
-          className={`relative flex flex-col gap-[5px] bg-panel-raised py-[7px] pr-3 pl-2.5 whitespace-nowrap ${flip ? "items-end" : "items-start"}`}
-          style={{ clipPath: flip ? CHAMFER_FLIP : CHAMFER }}
+          className={`relative flex flex-col gap-[5px] py-[7px] whitespace-nowrap ${
+            flip ? "items-end pr-3.5 pl-12" : "items-start pr-12 pl-3.5"
+          }`}
+          style={{ background: fade(flip, "var(--color-bg) 92%", "35%") }}
         >
-          {/* Accent strip across the top edge, and a notch in the far corner. */}
-          <span className={`absolute top-0 h-[2px] w-5 bg-current ${flip ? "right-0" : "left-0"}`} />
+          <span className={`absolute inset-y-0 w-[3px] -skew-x-[14deg] bg-current ${flip ? "right-0" : "left-0"}`} />
           <span
-            className={`absolute bottom-0 size-[5px] bg-current ${flip ? "left-0" : "right-0"}`}
-            style={{ clipPath: flip ? "polygon(0 0, 0 100%, 100% 100%)" : "polygon(100% 0, 100% 100%, 0 100%)" }}
+            className="absolute top-0 left-0 h-px w-full"
+            style={{ background: fade(flip, "var(--color-ink) 45%", "0%") }}
           />
-          <span className="font-display text-[19px] leading-[0.85] tracking-[0.06em] text-title">{label}</span>
-          <span className={`flex items-center gap-1.5 font-mono text-[9px] leading-none tracking-[0.1em] ${flip ? "flex-row-reverse" : ""}`}>
-            {visited !== undefined && (
-              <span className={`px-1 py-[3px] font-medium ${visited ? "bg-accent text-bg" : "bg-chip text-ink"}`}>
-                {visited ? "VISITED" : "PLANNED"}
-              </span>
-            )}
-            <span className="text-ink-dim tabular-nums">
-              {fmt(target.lat, "N", "S")} {fmt(target.lon, "E", "W")}
-            </span>
+          <span className="font-display text-[21px] leading-[0.85] tracking-[0.08em] text-title [text-shadow:0_1px_6px_rgb(0_0_0/0.8)]">
+            {label}
+          </span>
+          <span
+            className={`flex items-center gap-1.5 font-mono text-[9px] leading-none tracking-[0.14em] text-ink-muted tabular-nums ${
+              flip ? "flex-row-reverse" : ""
+            }`}
+          >
+            <span className="size-[5px] rotate-45 bg-current text-accent" />
+            {fmt(target.lat, "N", "S")} {fmt(target.lon, "E", "W")}
           </span>
         </span>
       </span>

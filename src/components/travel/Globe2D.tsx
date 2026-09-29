@@ -225,7 +225,6 @@ export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick, desti
           <TargetReticle
             target={target}
             label={label}
-            visited={destinations[index]?.visited}
             lockKey={flyKey}
             flip={marker.x > GLOBE_CENTRE + GLOBE_RADIUS * 0.1}
           />

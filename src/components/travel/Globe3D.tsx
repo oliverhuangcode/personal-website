@@ -354,7 +354,6 @@ export function Globe3D({
         <TargetReticle
           target={target}
           label={label}
-          visited={destinations[index]?.visited}
           lockKey={flyKey}
           flip={flip}
         />
