@@ -86,9 +86,9 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   **Motion:** at rest the spike is a dim silhouette behind the name, so the name leads. Scrolling
   (or a vertical swipe on a phone) spins it and winds up an energy level (`lib/holo/energy.ts`,
   unit tested): the device and scene exposure slowly brighten, sparks fly out from the core, and
-  swirling arcs of fire start sweeping around it: a thin hot core line wrapped in wispy flame
-  (an fbm shader on a camera-facing ribbon) that runs from pale lavender at the head to deep
-  purple at the tail, staying in the accent colour, each at a random radius, height, tilt, speed and direction. None of those appear
+  thick, soft sparks start flying off it in random clusters: short curved streaks with a soft
+  glowing core (an fbm shader on a camera-facing ribbon, lavender to deep purple) that whip
+  round, spiral outward and drift up or down as they fade. None of those appear
   until you spin it. Stop, and it runs back down over about twenty seconds. Mechanical parts (energy rings,
   helix, the casing ring riding up and down) move on their own; there's no heartbeat, flare or
   floor ring. The canvas publishes `data-energy` for tests. Bloom is scaled to the spike's

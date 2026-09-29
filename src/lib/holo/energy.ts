@@ -39,9 +39,9 @@ export function exposureFor(shown: number): number {
   return 0.55 + shown * 0.55;
 }
 
-/** Swirling arcs per second: none at rest, more often as it winds up. Each lasts 1–2.4s. */
+/** Clusters of 2–4 sparks per second: none at rest, more often as it winds up. */
 export function arcRate(shown: number): number {
-  return shown < REST_THRESHOLD ? 0 : 0.5 + shown * 2.8;
+  return shown < REST_THRESHOLD ? 0 : 0.8 + shown * 4.5;
 }
 
 /** Sparks per second thrown off the core. */

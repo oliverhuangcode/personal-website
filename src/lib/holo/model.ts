@@ -175,14 +175,14 @@ export function buildSpikeModel(): SpikeModel {
   const materials = new Set<THREE.Material>();
   const mat = <M extends THREE.Material>(m: M) => (materials.add(m), m);
 
-  // Armour: matte, painted gunmetal, stylised rather than photoreal. A faint world-space wear
+  // Armour: flat, matte painted metal, stylised rather than photoreal. A faint world-space wear
   // pattern keeps broad faces from reading as flat plastic, and an accent rim light traces the
   // silhouette the way game art separates a hero object from its background.
   const armour = mat(
     new THREE.MeshStandardMaterial({
-      color: 0x34313f,
-      metalness: 0.35,
-      roughness: 0.74,
+      color: 0x36333f,
+      metalness: 0.12,
+      roughness: 0.92,
       emissive: ACC,
       emissiveIntensity: 0,
     }),
@@ -209,7 +209,7 @@ export function buildSpikeModel(): SpikeModel {
         "#include <roughnessmap_fragment>",
         `#include <roughnessmap_fragment>
         float wear = wearNoise(vWear) * 0.6 + wearNoise(vWear * 3.7) * 0.4;
-        roughnessFactor = clamp(roughnessFactor * (0.85 + wear * 0.3), 0.3, 1.0);`,
+        roughnessFactor = clamp(roughnessFactor * (0.92 + wear * 0.16), 0.6, 1.0);`,
       )
       .replace("#include <common>", "#include <common>\nuniform float uRim;")
       .replace(
@@ -219,8 +219,8 @@ export function buildSpikeModel(): SpikeModel {
         totalEmissiveRadiance += vec3(0.725, 0.529, 1.0) * rimF * uRim;`,
       );
   };
-  // Brushed trim for brackets, pistons, bands and bolts: lighter than the armour, but satin.
-  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x7a768c, metalness: 0.55, roughness: 0.55 }));
+  // Trim for brackets, pistons, bands and bolts: lighter than the armour, but just as matte.
+  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x6f6b80, metalness: 0.2, roughness: 0.85 }));
   // Matte black polymer for cables, vents and pads.
   const polymer = mat(new THREE.MeshStandardMaterial({ color: 0x111016, metalness: 0.1, roughness: 0.72 }));
   // Emissive trims are not tone mapped, so they stay saturated and bloom like a game's light strips.
