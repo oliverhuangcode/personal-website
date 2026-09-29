@@ -3,22 +3,23 @@
 import { useEffect, useRef } from "react";
 import type * as THREE from "three";
 
-import { trianglesOf } from "@/lib/holo/geometry";
-import { CYCLE, REST, buildSpike, chargeAt } from "@/lib/holo/spike";
+import { CYCLE, REST, SPIKE_PARTS, chargeAt } from "@/lib/holo/spike";
 
 // Colour channels mirror the tokens in globals.css: accent #b987ff, bg #08070c.
 const ACC_HEX = 0xb987ff;
 const ACC_RGB = "185,135,255";
 const FOV = 38;
 const MAX_DPR = 2;
-const POOL_FLASHES = 18;
+/** Ribbons alive at once. Additive and bloomed, so a larger burst washes out the hero. */
+const POOL_FLASHES = 12;
 const POOL_MOTES = 160;
 const FLASH_SEGMENTS = 22;
-/** Flash ribbon layers, widest and faintest first: [width in px at S = 130, alpha, tint]. */
+/**
+ * Flash ribbon layers, widest and faintest first: [width in px at S = 130, alpha, tint].
+ * Bloom supplies the wide, soft falloff, so only the body and hot core are drawn.
+ */
 const FLASH_LAYERS = [
-  [56, 0.03, "acc"],
-  [32, 0.06, "acc"],
-  [17, 0.12, "acc"],
+  [17, 0.1, "acc"],
   [8.5, 0.3, "acc"],
   [4.2, 0.75, "mid"],
   [2, 1, "hot"],
@@ -87,6 +88,43 @@ const MOTE_VERT = /* glsl */ `
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
+/**
+ * The energy column: bright along its silhouette (fresnel), with bands of charge
+ * climbing it and a hot vertical core. Values above 1 are left for bloom to pick up.
+ */
+const CORE_VERT = /* glsl */ `
+  varying vec3 vN;
+  varying vec3 vV;
+  varying float vY;
+  void main() {
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vN = normalize(normalMatrix * normal);
+    vV = normalize(-mv.xyz);
+    vY = position.y;
+    gl_Position = projectionMatrix * mv;
+  }
+`;
+const CORE_FRAG = /* glsl */ `
+  uniform float uTime;
+  uniform float uCharge;
+  uniform float uFlare;
+  uniform vec3 uColor;
+  varying vec3 vN;
+  varying vec3 vV;
+  varying float vY;
+  void main() {
+    float facing = abs(dot(normalize(vN), normalize(vV)));
+    float rim = pow(1.0 - facing, 2.2);
+    float core = pow(facing, 6.0);
+    float bands = 0.5 + 0.5 * sin(vY * 11.0 - uTime * (2.0 + uCharge * 7.0));
+    bands = smoothstep(0.35, 1.0, bands) * (0.2 + uCharge * 0.8);
+    float energy = 0.05 + rim * 0.9 + core * (0.25 + uCharge * 1.4) + bands * 0.5;
+    energy *= 0.35 + uCharge * 1.1 + uFlare * 0.6;
+    vec3 hot = mix(uColor, vec3(1.0), clamp(uCharge * 0.55 + uFlare * 0.45 + core * 0.4, 0.0, 1.0));
+    gl_FragColor = vec4(hot * energy, 1.0);
+  }
+`;
+
 const MOTE_FRAG = /* glsl */ `
   varying float vAlpha;
   void main() {
@@ -96,6 +134,26 @@ const MOTE_FRAG = /* glsl */ `
     gl_FragColor = vec4(vec3(0.90, 0.84, 1.0) * a, a);
   }
 `;
+
+/** Everything besides Three.js core that the scene needs, fetched in parallel with it. */
+async function loadExtras() {
+  const [composer, render, bloom, output, room, bevel] = await Promise.all([
+    import("three/examples/jsm/postprocessing/EffectComposer.js"),
+    import("three/examples/jsm/postprocessing/RenderPass.js"),
+    import("three/examples/jsm/postprocessing/UnrealBloomPass.js"),
+    import("three/examples/jsm/postprocessing/OutputPass.js"),
+    import("three/examples/jsm/environments/RoomEnvironment.js"),
+    import("@/lib/holo/bevel"),
+  ]);
+  return {
+    EffectComposer: composer.EffectComposer,
+    RenderPass: render.RenderPass,
+    UnrealBloomPass: bloom.UnrealBloomPass,
+    OutputPass: output.OutputPass,
+    RoomEnvironment: room.RoomEnvironment,
+    bevelledPart: bevel.bevelledPart,
+  };
+}
 
 interface HoloCore3DProps {
   /** Called if WebGL or the 3D library is unavailable, so the caller can fall back to 2D. */
@@ -123,17 +181,24 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
     (async () => {
       let T: typeof THREE;
       let renderer: THREE.WebGLRenderer;
+      let mods: Awaited<ReturnType<typeof loadExtras>>;
       try {
-        T = await import("three");
+        [T, mods] = await Promise.all([import("three"), loadExtras()]);
         if (cancelled) return;
-        renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "high-performance" });
       } catch {
         if (!cancelled) onUnsupported();
         return;
       }
+      const { EffectComposer, RenderPass, UnrealBloomPass, OutputPass, RoomEnvironment, bevelledPart } = mods;
 
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       renderer.setClearColor(0x000000, 0);
+      // Filmic response so highlights roll off instead of clipping, like a game engine's.
+      renderer.toneMapping = T.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = T.PCFShadowMap;
       canvas.dataset.renderer = "webgl";
 
       const scene = new T.Scene();
@@ -143,52 +208,89 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       group.position.y = -0.13;
       scene.add(group);
 
+      // Reflections come from a studio environment: without one, metal has nothing to mirror
+      // and reads as flat plastic.
+      const pmrem = new T.PMREMGenerator(renderer);
+      const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environment = envTex;
+      scene.environmentIntensity = 0.32;
+
       // ── The device ────────────────────────────────────────────────────
-      const faces = buildSpike();
-      const meshGeo = (kind: "shell" | "core" | "seam") => {
-        const { positions, normals } = trianglesOf(faces, kind);
-        const g = new T.BufferGeometry();
-        g.setAttribute("position", new T.BufferAttribute(positions, 3));
-        g.setAttribute("normal", new T.BufferAttribute(normals, 3));
-        return g;
-      };
-      const shellGeo = meshGeo("shell");
-      const shellMat = new T.MeshStandardMaterial({
-        color: 0x2c2a36,
-        roughness: 0.42,
-        metalness: 0.3,
+      // Gunmetal armour: metallic, satin, with a clear lacquer that catches a sharp highlight
+      // along every bevel. The faint emissive lets the core tint it as it charges.
+      const shellMat = new T.MeshPhysicalMaterial({
+        color: 0x2b2934,
+        metalness: 0.85,
+        roughness: 0.38,
+        clearcoat: 0.7,
+        clearcoatRoughness: 0.18,
         emissive: ACC_HEX,
         emissiveIntensity: 0,
       });
-      const shell = new T.Mesh(shellGeo, shellMat);
-      const edges = new T.LineSegments(
-        new T.EdgesGeometry(shellGeo, 20),
-        new T.LineBasicMaterial({ color: 0x08070c, transparent: true, opacity: 0.6 }),
-      );
-      const glowMat = () =>
-        new T.MeshBasicMaterial({
-          color: ACC_HEX,
-          transparent: true,
-          blending: T.AdditiveBlending,
-          depthWrite: false,
-          side: T.DoubleSide,
-        });
-      const coreMat = glowMat();
-      const seamMat = glowMat();
-      const core = new T.Mesh(meshGeo("core"), coreMat);
-      const seam = new T.Mesh(meshGeo("seam"), seamMat);
-      core.renderOrder = seam.renderOrder = 2;
-      group.add(shell, edges, core, seam);
+      const coreMat = new T.ShaderMaterial({
+        vertexShader: CORE_VERT,
+        fragmentShader: CORE_FRAG,
+        uniforms: {
+          uTime: { value: 0 },
+          uCharge: { value: 0 },
+          uFlare: { value: 0 },
+          uColor: { value: new T.Color(ACC_HEX) },
+        },
+        transparent: true,
+        blending: T.AdditiveBlending,
+        depthWrite: false,
+      });
+      // Emissive trim: not tone mapped, so it stays saturated and blooms like a game's light strip.
+      const seamMat = new T.MeshBasicMaterial({ color: ACC_HEX, toneMapped: false });
+      const filamentMat = new T.MeshBasicMaterial({ color: 0xf4ecff, toneMapped: false });
+
+      for (const part of SPIKE_PARTS) {
+        // The glow column is rounded almost to a cylinder so its rim glow wraps around it.
+        const geo = bevelledPart(part, part.kind === "core" ? 0.45 : undefined);
+        const mat = part.kind === "shell" ? shellMat : part.kind === "core" ? coreMat : seamMat;
+        const mesh = new T.Mesh(geo, mat);
+        mesh.name = part.name;
+        if (part.kind === "shell") mesh.castShadow = mesh.receiveShadow = true;
+        if (part.kind === "core") mesh.renderOrder = 2;
+        group.add(mesh);
+      }
+      // A white-hot filament down the centre of the column.
+      const filament = new T.Mesh(new T.CylinderGeometry(0.018, 0.018, 1.3, 12, 1, true), filamentMat);
+      filament.position.y = 0.18;
+      group.add(filament);
 
       // Light spilling from the core onto the inside faces of the struts and cap.
       const coreLight = new T.PointLight(ACC_HEX, 0, 3.2, 1.6);
       coreLight.position.set(0, 0.2, 0);
       group.add(coreLight);
-      const key = new T.DirectionalLight(0xf2eeff, 3.1);
+      const key = new T.DirectionalLight(0xf2eeff, 2.6);
       key.position.set(-2.25, 4, 2.75);
-      const rimLight = new T.DirectionalLight(ACC_HEX, 1.1);
-      rimLight.position.set(3, 1, -3);
-      scene.add(key, rimLight, new T.HemisphereLight(0x8a86a0, 0x08070c, 0.22));
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      key.shadow.camera.left = key.shadow.camera.bottom = -1.8;
+      key.shadow.camera.right = key.shadow.camera.top = 1.8;
+      key.shadow.camera.near = 1;
+      key.shadow.camera.far = 10;
+      key.shadow.bias = -0.0006;
+      key.shadow.normalBias = 0.02;
+      key.shadow.radius = 4;
+      // Accent rim from behind, so the silhouette separates from the dark page.
+      const rimLight = new T.DirectionalLight(ACC_HEX, 1.5);
+      rimLight.position.set(3, 1.5, -3);
+      scene.add(key, rimLight, new T.HemisphereLight(0x8a86a0, 0x08070c, 0.15));
+
+      // Soft contact shadow where the plinth meets the floor: what makes it sit, not float.
+      const contactTex = glowTexture(T, [
+        [0, "rgba(0,0,0,0.9)"],
+        [0.55, "rgba(0,0,0,0.45)"],
+        [1, "rgba(0,0,0,0)"],
+      ]);
+      const contactMat = new T.MeshBasicMaterial({ map: contactTex, transparent: true, depthWrite: false });
+      const contact = new T.Mesh(new T.PlaneGeometry(2.3, 2.3), contactMat);
+      contact.rotation.x = -Math.PI / 2;
+      contact.position.y = -1.035;
+      contact.renderOrder = 1;
+      group.add(contact);
 
       // ── Haze and floor pool ───────────────────────────────────────────
       const hazeTex = glowTexture(T, [[0, `rgba(${ACC_RGB},1)`], [1, `rgba(${ACC_RGB},0)`]]);
@@ -212,6 +314,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const pool = new T.Mesh(new T.PlaneGeometry(5, 5), poolMat);
       pool.rotation.x = -Math.PI / 2;
       pool.position.y = -1.03;
+      pool.renderOrder = 1;
       group.add(pool);
 
       // ── Light ribbons ─────────────────────────────────────────────────
@@ -271,6 +374,13 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       points.renderOrder = 4;
       scene.add(points);
 
+      // ── Post-processing ───────────────────────────────────────────────
+      const composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      const bloom = new UnrealBloomPass(new T.Vector2(256, 256), 0.4, 0.28, 0.8);
+      composer.addPass(bloom);
+      composer.addPass(new OutputPass());
+
       // ── State ─────────────────────────────────────────────────────────
       let spin = 0.35;
       let boost = 0;
@@ -295,6 +405,8 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         if (!W || !H) return false;
         renderer.setPixelRatio(dpr);
         renderer.setSize(W, H, false);
+        composer.setPixelRatio(dpr);
+        composer.setSize(W, H);
         camera.aspect = W / H;
         camera.updateProjectionMatrix();
         // Px per model unit at the origin, matching the 2D version's sizing.
@@ -343,17 +455,25 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         group.updateMatrixWorld(true);
 
         // Materials driven by the charge.
-        shellMat.emissiveIntensity = glowK * 0.035;
-        coreLight.intensity = 0.4 + glowK * 5;
+        shellMat.emissiveIntensity = glowK * 0.02;
+        coreLight.intensity = 0.3 + Math.min(glowK, 1.6) * 3.2;
         const white = Math.min(1, charge * 0.55 + flare * 0.45);
-        coreMat.color.setRGB(185 / 255 + (1 - 185 / 255) * white, 135 / 255 + (1 - 135 / 255) * white, 1);
-        coreMat.opacity = Math.min(1, (0.3 + 0.3 * 0.6) * glowK);
-        seamMat.color.copy(coreMat.color);
-        seamMat.opacity = Math.min(1, 0.5 * glowK);
-        haze.material.opacity = 0.03 + charge * 0.07 + flare * 0.14;
+        coreMat.uniforms.uTime.value = t;
+        coreMat.uniforms.uCharge.value = charge + beat * 0.08;
+        coreMat.uniforms.uFlare.value = flare;
+        seamMat.color.setRGB(185 / 255 + (1 - 185 / 255) * white, 135 / 255 + (1 - 135 / 255) * white, 1);
+        seamMat.color.multiplyScalar(0.6 + glowK * 0.9);
+        filamentMat.color.setScalar(0.55 + Math.min(glowK, 1.6) * 0.9);
+        // Bloom follows the charge: a faint halo at rest, a flare at the peak.
+        // Bloom blurs in screen pixels, so on a small canvas the same glow covers far more of the
+        // object and the page. Scale it with the device's on-screen size.
+        const bloomK = Math.min(1, Math.max(0.45, S / 160));
+        bloom.strength = (0.3 + charge * 0.4 + flare * 0.3) * bloomK;
+        bloom.radius = 0.28 * bloomK;
+        haze.material.opacity = 0.01 + charge * 0.025 + flare * 0.06;
         const hazeSize = (3 + charge * 1.2) * 2;
         haze.scale.set(hazeSize, hazeSize, 1);
-        poolMat.opacity = Math.min(0.85, 0.2 * glowK);
+        poolMat.opacity = Math.min(0.5, 0.1 * glowK);
 
         // Camera position in the group's frame, for billboarding the ribbons.
         camPos.copy(camera.position);
@@ -455,7 +575,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           moteGeo.getAttribute("aAlpha").needsUpdate = true;
         }
 
-        renderer.render(scene, camera);
+        composer.render();
       };
 
       // Reduced motion: one still frame, redrawn only when the canvas resizes.
@@ -506,9 +626,12 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           const m = o as THREE.Mesh;
           m.geometry?.dispose();
         });
-        for (const mat of [shellMat, coreMat, seamMat, poolMat, ribbonMat, moteMat, haze.material]) mat.dispose();
-        hazeTex.dispose();
-        poolTex.dispose();
+        for (const mat of [shellMat, coreMat, seamMat, filamentMat, contactMat, poolMat, ribbonMat, moteMat, haze.material]) {
+          mat.dispose();
+        }
+        for (const tex of [hazeTex, poolTex, contactTex, envTex]) tex.dispose();
+        pmrem.dispose();
+        composer.dispose();
         renderer.dispose();
       }
       teardown = () => {

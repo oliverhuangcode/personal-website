@@ -74,10 +74,14 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   The marker's click target is a real `<button>` laid over the canvas and repositioned each
   frame, so it is keyboard-reachable; it is hidden while the marker is on the far side. The
   coastline data is Natural Earth 1:110m (public domain) via `world-atlas`.
-- **The home spike** is a lit, faceted Three.js model built from `lib/holo/spike.ts` (converted to
-  triangles in `lib/holo/geometry.ts`). The core is additive glow plus a point light that
-  spills onto the struts; the arcs are camera-facing ribbons rebuilt each frame; motes are a
-  point cloud. Charge and flare come from the same `chargeAt` cycle as before.
+- **The home spike** is built from the part list in `lib/holo/spike.ts`. The 3D scene turns each
+  part into a bevelled mesh (`lib/holo/bevel.ts`, unit tested): filleted corners, bevelled caps and
+  normals smoothed only across the rounding, so edges catch a highlight instead of reading as
+  low-poly. The armour is lacquered gunmetal (`MeshPhysicalMaterial` with clearcoat) lit by a studio
+  environment map, with ACES filmic tone mapping, soft shadows and a contact shadow. The glow column
+  is a fresnel energy shader with a white-hot filament, and bloom (strength following the charge
+  cycle) does the glow rather than faked wide strokes. The flat canvas version still draws the
+  same parts with hard edges.
 - **Both scenes fall back to the earlier flat drawings** (`HoloCore2D`, `Globe2D`) if WebGL or
   the Three.js chunk is unavailable, rather than going blank. The e2e suite checks this by
   launching with WebGL disabled. Delete the 2D files if you would rather not maintain them.

@@ -95,7 +95,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
             className="flex flex-col gap-3 border-l-2 border-accent bg-panel-glass p-5"
           >
             {/* The live region itself must persist for announcements; only its content remounts. */}
-            <div key={`${selected}-${tab}`} className="flex animate-enter flex-col gap-3" style={stagger(0.08)}>
+            <div key={`${selected}-${tab}`} className="flex animate-swap flex-col gap-3">
               <h3 className="font-display text-[24px] leading-none font-normal tracking-[0.08em]">
                 {activeTab.title}
               </h3>
