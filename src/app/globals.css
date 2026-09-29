@@ -76,7 +76,7 @@
   @keyframes lock {
     from {
       opacity: 0;
-      transform: scale(2.4) rotate(45deg);
+      transform: scaleX(2.6);
     }
     to {
       opacity: 1;

@@ -325,7 +325,7 @@ export function Globe3D({ target, flyKey, label, index = 0, onMarkerClick, onUns
         aria-label={`Centre the globe on ${label}`}
         onClick={onMarkerClick}
         style={{ width: PIN_W, height: PIN_H }}
-        className="absolute top-0 left-0 cursor-pointer"
+        className="group absolute top-0 left-0 cursor-pointer"
       >
         <TargetReticle target={target} label={label} index={index} lockKey={flyKey} flip={flip} />
       </button>

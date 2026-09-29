@@ -198,7 +198,7 @@ export function Globe2D({ target, flyKey, label, index = 0, onMarkerClick }: Glo
             left: `calc(${(marker.x / GLOBE_SIZE) * 100}% - ${PIN_W / 2}px)`,
             top: `calc(${(marker.y / GLOBE_SIZE) * 100}% - ${PIN_H}px)`,
           }}
-          className="absolute cursor-pointer"
+          className="group absolute cursor-pointer"
         >
           <TargetReticle
             target={target}
