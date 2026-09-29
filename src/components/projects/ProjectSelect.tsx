@@ -4,6 +4,7 @@ import { startTransition, useState, ViewTransition } from "react";
 
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Project } from "@/content/types";
+import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
@@ -44,6 +45,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
     });
   };
   const cycle = (step: number) => pick((selected + step + projects.length) % projects.length);
+  useArrowCycle(cycle);
 
   return (
     <main className="flex flex-1 flex-col">
@@ -125,7 +127,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
 
       <nav
         aria-label="Project roster"
-        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter py-[clamp(8px,min(2.5vw,2dvh),28px)]"
+        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter pt-[clamp(8px,min(2.5vw,2dvh),28px)] pb-[clamp(20px,min(4vw,4dvh),44px)]"
       >
         <div className="h-px bg-[linear-gradient(90deg,transparent,#2e2b38_20%,#2e2b38_80%,transparent)]" />
         {/* safe-center keeps the first thumbnail reachable when the row overflows. */}

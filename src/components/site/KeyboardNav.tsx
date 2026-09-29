@@ -3,19 +3,15 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { isTypingTarget } from "@/lib/keys";
 import { PAGES, navDirection, stepPage, type NavDirection } from "@/lib/nav";
 import { blip, toggleSound } from "@/lib/sound/sound";
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
-}
 
 /**
  * 1–5 jump to a page, ↑ and ↓ cycle through them, S toggles sound.
  *
- * ← and → are deliberately left alone: they belong to whatever control has
- * focus, such as moving along a row of tabs or thumbnails.
+ * ← and → are left to each page: they step through its picks where it has them
+ * (see `useArrowCycle`).
  */
 export function KeyboardNav() {
   const router = useRouter();

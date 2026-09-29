@@ -4,6 +4,7 @@ import { startTransition, useMemo, useState, ViewTransition } from "react";
 
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
+import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2, pad3 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
@@ -32,6 +33,7 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
     startTransition(() => setSelection((s) => ({ index: i, seq: s.seq + 1 })));
   };
   const cycle = (step: number) => select((index + step + trips.length) % trips.length);
+  useArrowCycle(cycle);
   const showPhoto = (i: number) => {
     blip("photo");
     setPhotoIndex((prev) => prev.map((v, t) => (t === index ? i : v)));
