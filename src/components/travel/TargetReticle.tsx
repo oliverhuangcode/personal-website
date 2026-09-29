@@ -1,20 +1,46 @@
 import type { LonLatPoint } from "./globe-types";
 
-/** Marker size in CSS px; also the marker's hit target. It is centred on the destination. */
-export const MARKER_PX = 36;
+// Markers follow the "1D Ping" spec in the Map Icons design file. Its geometry is in
+// design units, drawn inside a group turned 45°; SCALE maps one unit to CSS px.
+const SCALE = 1.3;
+
+/** Selected marker box in CSS px (40 design units); also its hit target. Centred on the destination. */
+export const MARKER_PX = 40 * SCALE;
+/** Hit target for the other destinations' markers, in CSS px. */
+export const DOT_PX = 28;
 
 const fmt = (v: number, pos: string, neg: string) => `${Math.abs(v).toFixed(2)}°${v >= 0 ? pos : neg}`;
 
-const C = MARKER_PX / 2;
-/** A square turned 45°, centred on the marker, reaching `r` px from the centre. */
-const diamond = (r: number) => `M${C} ${C - r}L${C + r} ${C}L${C} ${C + r}L${C - r} ${C}Z`;
+/** viewBox centred on the origin, `px` CSS px across. */
+const box = (px: number) => {
+  const h = px / SCALE / 2;
+  return `${-h} ${-h} ${h * 2} ${h * 2}`;
+};
+
+/** Square with half-side `h`, centred on the origin. */
+const square = (h: number) => ({ x: -h, y: -h, width: h * 2, height: h * 2 });
+
+/** A radar ring: a square outline growing from half-side 4 to 16 while fading out. */
+function Ring({ begin }: { begin: string }) {
+  const anim = { dur: "1.4s", begin, repeatCount: "indefinite" };
+  return (
+    <rect {...square(4)} fill="none" stroke="currentColor" strokeWidth={0.8} opacity={0}>
+      <animate attributeName="x" values="-4;-16" {...anim} />
+      <animate attributeName="y" values="-4;-16" {...anim} />
+      <animate attributeName="width" values="8;32" {...anim} />
+      <animate attributeName="height" values="8;32" {...anim} />
+      <animate attributeName="opacity" values="1;0" {...anim} />
+    </rect>
+  );
+}
 
 /**
- * The selected destination's marker: a radar ping. A solid diamond with square rings
- * radiating out from just around it, and a readout tag carrying the coordinates. Purely decorative: it sits inside the marker button, which carries the
- * accessible label and a `group` class for hover.
+ * The selected destination's marker: a radar ping. A solid diamond with two square rings
+ * radiating out from it, half a cycle apart, and a readout tag carrying the coordinates.
+ * Purely decorative: it sits inside the marker button, which carries the accessible label
+ * and a `group` class for hover.
  *
- * `lockKey` replays the lock-on each time a destination is selected; `flip` puts the
+ * `lockKey` replays the entrance each time a destination is selected; `flip` puts the
  * tag on the left when the marker is on the right half, so it stays inside the view.
  */
 export function TargetReticle({
@@ -30,33 +56,25 @@ export function TargetReticle({
   lockKey: number;
   flip: boolean;
 }) {
-  const box = `0 0 ${MARKER_PX} ${MARKER_PX}`;
   return (
     <span
       aria-hidden
       key={lockKey}
       className="pointer-events-none absolute inset-0 text-accent transition-colors duration-150 group-hover:text-accent-hover"
     >
-      {/* Radar rings: two, half a cycle apart, so one is always on its way out. */}
-      {[0.6, 1.6].map((delay) => (
-        <svg
-          key={delay}
-          viewBox={box}
-          className="absolute inset-0 size-full animate-radar overflow-visible opacity-0"
-          style={{ animationDelay: `${delay}s` }}
-        >
-          <path d={diamond(6.5)} fill="none" stroke="currentColor" strokeWidth={1} />
-        </svg>
-      ))}
-      <svg
-        viewBox={box}
-        className="absolute inset-0 size-full animate-pop overflow-visible drop-shadow-[0_2px_3px_rgb(0_0_0/0.6)]"
-      >
-        <path d={diamond(5.5)} fill="currentColor" />
+      <svg viewBox={box(MARKER_PX)} className="absolute inset-0 size-full overflow-visible">
+        <g transform="rotate(45)">
+          {/* SMIL ignores prefers-reduced-motion, so the rings are simply not drawn there. */}
+          <g className="motion-reduce:hidden">
+            <Ring begin="0s" />
+            <Ring begin="0.7s" />
+          </g>
+          <rect {...square(3.5)} fill="currentColor" className="origin-center animate-pop [transform-box:fill-box]" />
+        </g>
       </svg>
       <span
         className={`absolute top-[calc(50%-13px)] animate-tag drop-shadow-[0_3px_4px_rgb(0_0_0/0.6)] ${
-          flip ? "right-[calc(100%+4px)]" : "left-[calc(100%+4px)]"
+          flip ? "right-full" : "left-full"
         }`}
       >
         <span
@@ -81,31 +99,29 @@ export function TargetReticle({
   );
 }
 
-/** Hit target for the other destinations' markers, in CSS px. */
-export const DOT_PX = 22;
-
-const D = DOT_PX / 2;
-const dot = (r: number) => `M${D} ${D - r}L${D + r} ${D}L${D} ${D + r}L${D - r} ${D}Z`;
-
 /**
- * An unselected destination: a white diamond in a thin frame if visited, a dotted outline
- * if planned. Decorative; it sits inside the button that selects that destination.
+ * An unselected destination, per the Ping spec: a light diamond in a dark square frame if
+ * visited, a dashed outline if planned. Decorative; it sits inside the button that
+ * selects that destination.
  */
 export function DestinationMarker({ visited }: { visited: boolean }) {
   return (
-    <svg
-      aria-hidden
-      viewBox={`0 0 ${DOT_PX} ${DOT_PX}`}
-      className="pointer-events-none absolute inset-0 size-full text-ink-dim transition-colors duration-150 group-hover:text-accent-hover"
-    >
-      {visited ? (
-        <>
-          <path d={dot(6)} fill="var(--color-bg)" fillOpacity={0.6} stroke="currentColor" strokeWidth={1} strokeOpacity={0.6} />
-          <path d={dot(3)} fill="var(--color-title)" className="group-hover:fill-accent-hover" />
-        </>
-      ) : (
-        <path d={dot(4)} fill="none" stroke="currentColor" strokeWidth={1} strokeDasharray="1.5 1.5" />
-      )}
+    <svg aria-hidden viewBox={box(DOT_PX)} className="pointer-events-none absolute inset-0 size-full overflow-visible">
+      <g transform="rotate(45)" className="text-ink transition-colors duration-150 group-hover:text-accent-hover">
+        {visited ? (
+          <>
+            <rect {...square(8)} fill="none" className="stroke-border-strong group-hover:stroke-accent" />
+            <rect {...square(3.5)} fill="currentColor" />
+          </>
+        ) : (
+          <rect
+            {...square(3.5)}
+            fill="none"
+            strokeDasharray="2 2"
+            className="stroke-ink-muted group-hover:stroke-accent-hover"
+          />
+        )}
+      </g>
     </svg>
   );
 }
