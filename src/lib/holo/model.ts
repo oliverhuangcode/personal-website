@@ -180,7 +180,7 @@ export function buildSpikeModel(): SpikeModel {
   // silhouette the way game art separates a hero object from its background.
   const armour = mat(
     new THREE.MeshStandardMaterial({
-      color: 0x1e1c25,
+      color: 0x2a2733,
       metalness: 0.12,
       roughness: 0.92,
       emissive: ACC,
@@ -221,7 +221,7 @@ export function buildSpikeModel(): SpikeModel {
       );
   };
   // Trim for brackets, pistons, bands and bolts: lighter than the armour, but just as matte.
-  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x3f3c4c, metalness: 0.2, roughness: 0.85 }));
+  const trim = mat(new THREE.MeshStandardMaterial({ color: 0x524e62, metalness: 0.2, roughness: 0.85 }));
   // Matte black polymer for cables, vents and pads.
   const polymer = mat(new THREE.MeshStandardMaterial({ color: 0x111016, metalness: 0.1, roughness: 0.72 }));
   // Emissive trims are not tone mapped, so they stay saturated and bloom like a game's light strips.

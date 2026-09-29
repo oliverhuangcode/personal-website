@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  REST_THRESHOLD,
+  ACTIVE_THRESHOLD,
+  addActivity,
   addSpin,
   arcRate,
+  burnRate,
   decay,
   exposureFor,
   follow,
   glowFor,
+  settle,
   sparkRate,
 } from "./energy";
 
@@ -44,21 +47,54 @@ describe("spin energy", () => {
 
 describe("what the energy drives", () => {
   it("rests dim, then brightens the more you spin", () => {
-    expect(glowFor(0)).toBeLessThan(0.25);
+    expect(glowFor(0)).toBeLessThan(0.3);
     expect(glowFor(1)).toBe(1);
     expect(exposureFor(0)).toBeLessThan(exposureFor(1));
   });
 
-  it("shows no arcs or sparks until you start spinning", () => {
-    expect(arcRate(0)).toBe(0);
-    expect(sparkRate(0)).toBe(0);
-    expect(arcRate(REST_THRESHOLD / 2)).toBe(0);
-    expect(arcRate(0.2)).toBeGreaterThan(0);
-    expect(sparkRate(0.2)).toBeGreaterThan(0);
+  it("spawns nothing unless you're spinning it right now", () => {
+    expect(arcRate(0, 0)).toBe(0);
+    expect(sparkRate(0, 0)).toBe(0);
+    // Fully charged but not being spun: the glow stays, the effects don't.
+    expect(arcRate(1, 0)).toBe(0);
+    expect(sparkRate(1, 0)).toBe(0);
+    expect(arcRate(1, ACTIVE_THRESHOLD / 2)).toBe(0);
   });
 
-  it("throws more arcs and sparks as it winds up", () => {
-    expect(arcRate(1)).toBeGreaterThan(arcRate(0.3));
-    expect(sparkRate(1)).toBeGreaterThan(sparkRate(0.3));
+  it("throws more arcs and sparks the higher the charge while spinning", () => {
+    expect(arcRate(0.1, 1)).toBeGreaterThan(0);
+    expect(sparkRate(0.1, 1)).toBeGreaterThan(0);
+    expect(arcRate(1, 1)).toBeGreaterThan(arcRate(0.3, 1));
+    expect(sparkRate(1, 1)).toBeGreaterThan(sparkRate(0.3, 1));
+  });
+});
+
+describe("activity", () => {
+  it("jumps up on a scroll and is gone within about half a second", () => {
+    const a = addActivity(0, 120);
+    expect(a).toBeGreaterThan(ACTIVE_THRESHOLD);
+    let x = a;
+    for (let i = 0; i < 30; i++) x = settle(x, 1 / 60);
+    expect(x).toBeLessThan(ACTIVE_THRESHOLD);
+  });
+
+  it("stops the effects long before the charge runs down", () => {
+    let charge = 0;
+    let act = 0;
+    for (let i = 0; i < 20; i++) {
+      charge = addSpin(charge, 120);
+      act = addActivity(act, 120);
+    }
+    for (let i = 0; i < 60; i++) {
+      charge = decay(charge, 1 / 60);
+      act = settle(act, 1 / 60);
+    }
+    expect(sparkRate(charge, act)).toBe(0);
+    expect(glowFor(charge)).toBeGreaterThan(0.8);
+  });
+
+  it("burns off sparks already out faster once you stop", () => {
+    expect(burnRate(1)).toBe(1);
+    expect(burnRate(0)).toBeGreaterThan(2);
   });
 });

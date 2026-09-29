@@ -1,16 +1,25 @@
 /**
- * Spin energy for the 3D spike: scrolling winds it up, and it slowly runs down when you stop.
- * The scene reads it to set brightness, spawn sparks off the core, and let arcs of fire start
- * swirling around the device. Pure functions, so the feel can be tuned and tested without a
- * renderer.
+ * How the 3D spike responds to being spun. Two signals, deliberately separate:
+ *
+ * - **Charge** builds with every scroll or swipe and drains slowly once you stop. It sets how
+ *   bright the device glows, so it feels like it's charging up.
+ * - **Activity** says whether you're spinning it right now. It spikes on each scroll and falls
+ *   to zero within about half a second. Sparks and arcs only spawn while it's up, so the effects
+ *   outside the device die away as soon as you stop, even while the glow lingers.
+ *
+ * Pure functions, so the feel can be tuned and tested without a renderer.
  */
 
 /** Energy gained per pixel of wheel travel: roughly fifteen notches from rest to full. */
 export const SCROLL_GAIN = 0.00065;
-/** Energy lost per second once you stop. Full to empty takes about twenty seconds. */
-export const DECAY_PER_S = 0.05;
-/** Below this the device is at rest: no arcs, no sparks. */
-export const REST_THRESHOLD = 0.03;
+/** Charge lost per second once you stop. Full to empty takes about twelve seconds. */
+export const DECAY_PER_S = 0.08;
+/** Activity gained per pixel of wheel travel: a single notch is enough to start effects. */
+export const ACTIVITY_GAIN = 0.006;
+/** Activity lost per second: it's gone about half a second after your last scroll. */
+export const ACTIVITY_DECAY_PER_S = 2.2;
+/** Below this you're not spinning it: no new sparks or arcs. */
+export const ACTIVE_THRESHOLD = 0.05;
 /** How quickly the visible level follows the real one, per second. */
 const FOLLOW_PER_S = 1.6;
 
@@ -24,14 +33,24 @@ export function decay(energy: number, dt: number): number {
   return Math.max(0, energy - DECAY_PER_S * dt);
 }
 
+/** Marks the device as being spun right now, by a wheel or swipe delta in pixels. */
+export function addActivity(activity: number, delta: number): number {
+  return Math.min(1, activity + Math.abs(delta) * ACTIVITY_GAIN);
+}
+
+/** Lets activity fall away over `dt` seconds. */
+export function settle(activity: number, dt: number): number {
+  return Math.max(0, activity - ACTIVITY_DECAY_PER_S * dt);
+}
+
 /** Eases the level on screen toward the real energy, so changes glide rather than jump. */
 export function follow(shown: number, energy: number, dt: number): number {
   return shown + (energy - shown) * Math.min(1, dt * FOLLOW_PER_S);
 }
 
-/** Device brightness (0–1): a dim silhouette at rest, climbing as it winds up. */
+/** Device brightness (0–1): a dim silhouette at rest, climbing as it charges. */
 export function glowFor(shown: number): number {
-  return 0.18 + shown * 0.82;
+  return 0.25 + shown * 0.75;
 }
 
 /**
@@ -39,15 +58,26 @@ export function glowFor(shown: number): number {
  * not the outer shell, which stays dark because the light is inside it.
  */
 export function exposureFor(shown: number): number {
-  return 0.5 + shown * 0.12;
+  return 0.62 + shown * 0.12;
 }
 
-/** Clusters of 2–4 sparks per second: none at rest, more often as it winds up. */
-export function arcRate(shown: number): number {
-  return shown < REST_THRESHOLD ? 0 : 0.8 + shown * 4.5;
+/**
+ * Clusters of 2–4 sparks per second. Nothing unless you're spinning it right now; while you
+ * are, more come the higher the charge.
+ */
+export function arcRate(shown: number, activity: number): number {
+  return activity < ACTIVE_THRESHOLD ? 0 : activity * (0.8 + shown * 4.5);
 }
 
-/** Sparks per second thrown off the core. */
-export function sparkRate(shown: number): number {
-  return shown < REST_THRESHOLD ? 0 : Math.pow(shown, 1.2) * 55;
+/** Sparks per second thrown off the core, on the same terms as the arcs. */
+export function sparkRate(shown: number, activity: number): number {
+  return activity < ACTIVE_THRESHOLD ? 0 : activity * (6 + Math.pow(shown, 1.2) * 50);
+}
+
+/**
+ * How fast live sparks and arcs age: normal while spinning, up to three times faster once you
+ * stop, so the ones already out burn off promptly instead of hanging around.
+ */
+export function burnRate(activity: number): number {
+  return 1 + (1 - Math.min(1, activity / ACTIVE_THRESHOLD / 4)) * 2;
 }

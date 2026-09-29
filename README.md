@@ -81,17 +81,20 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   charges; braced struts with glowing channels; cables; and a crown with horns and an emitter.
   Rounded parts come from `lib/holo/bevel.ts`, so nothing has a hard CG edge. The finish is
   stylised rather than photoreal: matte painted gunmetal with a faint world-space wear pattern,
-  satin trim and polymer, soft fill lighting with only a little environment reflection, and an
-  accent rim light tracing the silhouette, as game art does.
-  **Motion:** at rest the spike is a dim silhouette behind the name, so the name leads. Scrolling
-  (or a vertical swipe on a phone) spins it and winds up an energy level (`lib/holo/energy.ts`,
-  unit tested): the device and scene exposure slowly brighten, sparks fly out from the core, and
-  thick, soft sparks start flying off it in random clusters: short curved streaks with a soft
-  glowing core (an fbm shader on a camera-facing ribbon, lavender to deep purple) that whip
-  round, spiral outward and drift up or down as they fade. None of those appear
-  until you spin it. Stop, and it runs back down over about twenty seconds. Mechanical parts (energy rings,
-  helix, the casing ring riding up and down) move on their own; there's no heartbeat, flare or
-  floor ring. The canvas publishes `data-energy` for tests. Bloom is scaled to the spike's
+  satin trim and polymer, soft fill lighting with almost no environment reflection, and only
+  a faint accent rim, since the light comes from inside.
+  **Motion:** at rest the spike is a dark silhouette behind the name, so the name leads.
+  Scrolling (or a vertical swipe on a phone) spins it and drives two separate signals
+  (`lib/holo/energy.ts`, unit tested). **Charge** builds with every scroll and drains over about
+  twelve seconds; it brightens the core, its glow and the bloom, so it feels like charging up.
+  **Activity** says you're spinning it right now and is gone about half a second after your last
+  scroll; sparks from the core and thick, soft arcs of light (short curved streaks, an fbm
+  shader on camera-facing ribbons, lavender to deep purple) only spawn while it's up, more of them
+  the higher the charge, and the ones already out burn off faster once you stop. The light lives
+  inside the core: the core's point lights are short range, and the outer shell stays dark and
+  matte. Mechanical parts (energy rings, helix, the casing ring riding up and down) move on
+  their own; there's no heartbeat, flare or floor ring. The canvas publishes `data-energy` and
+  `data-activity` for tests. Bloom is scaled to the spike's
   on-screen size so it can't wash out the name on phones. The hero text is `select-none`, since
   drags there spin the spike. The flat canvas fallback (no WebGL) still draws the older design
   from the

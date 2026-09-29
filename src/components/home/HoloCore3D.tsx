@@ -3,7 +3,18 @@
 import { useEffect, useRef } from "react";
 import type * as THREE from "three";
 
-import { addSpin, arcRate, decay, exposureFor, follow, glowFor, sparkRate } from "@/lib/holo/energy";
+import {
+  addActivity,
+  addSpin,
+  arcRate,
+  burnRate,
+  decay,
+  exposureFor,
+  follow,
+  glowFor,
+  settle,
+  sparkRate,
+} from "@/lib/holo/energy";
 
 // Colour channels mirror the tokens in globals.css: accent #b987ff, bg #08070c.
 const ACC_HEX = 0xb987ff;
@@ -267,7 +278,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const model = buildSpikeModel();
       group.add(model.group);
 
-      const key = new T.DirectionalLight(0xf2eeff, 1.1);
+      const key = new T.DirectionalLight(0xf2eeff, 1.5);
       key.position.set(-2.25, 4, 2.75);
       key.castShadow = true;
       key.shadow.mapSize.set(1024, 1024);
@@ -281,7 +292,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       // Accent rim from behind, so the silhouette separates from the dark page.
       const rimLight = new T.DirectionalLight(ACC_HEX, 0.3);
       rimLight.position.set(3, 1.5, -3);
-      scene.add(key, rimLight, new T.HemisphereLight(0x7a7690, 0x0c0a12, 0.22));
+      scene.add(key, rimLight, new T.HemisphereLight(0x7a7690, 0x0c0a12, 0.32));
 
       // Soft contact shadow where the plinth meets the floor: what makes it sit, not float.
       const contactTex = glowTexture(T, [
@@ -388,6 +399,8 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       /** Spin energy (see lib/holo/energy): what scrolling winds up, and what's shown of it. */
       let energy = 0;
       let shown = 0;
+      /** Whether it's being spun right now; sparks and arcs only spawn while this is up. */
+      let activity = 0;
       let lastReport = 0;
       let touchY: number | null = null;
       let tiltX = 0;
@@ -449,10 +462,12 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         if (!reduced) {
           energy = decay(energy, dt);
           shown = follow(shown, energy, dt);
+          activity = settle(activity, dt);
         }
         // Published for tests and debugging, a few times a second rather than every frame.
         if (now - lastReport > 250) {
           canvas.dataset.energy = Math.max(0, shown).toFixed(2);
+          canvas.dataset.activity = activity.toFixed(2);
           lastReport = now;
         }
         model.update({ t, dt: reduced ? 0 : dt, glow: glowFor(shown) });
@@ -472,7 +487,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
 
         // Sparks fly only once it's spinning, in clusters, more often the more it's wound up.
         if (!reduced) {
-          for (let burst = spawnCount(arcRate(shown) * dt); burst > 0; burst--) {
+          for (let burst = spawnCount(arcRate(shown, activity) * dt); burst > 0; burst--) {
             const a = Math.random() * TAU;
             const y = -0.6 + Math.random() * 1.4;
             for (let n = 2 + Math.floor(Math.random() * 3); n > 0; n--) {
@@ -483,12 +498,14 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
           }
         }
         ribbonMat.uniforms.uTime.value = t;
+        const burn = burnRate(activity);
         // Each is a camera-facing ribbon (same width from any angle), depth-tested so it passes
         // behind the device. The path is a smooth tilted circle with a slight breathing wobble.
         arcs.forEach((arc, ai) => {
           const mesh = ribbons[ai];
           if (arc.live && !reduced) {
-            arc.life += dt;
+            // Age faster once you stop spinning, so the sparks already out burn off promptly.
+            arc.life += dt * burn;
             arc.a += arc.w * dt;
             arc.r += arc.dr * dt;
             arc.y += arc.dy * dt;
@@ -534,7 +551,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
 
         // Sparks fly out from the core, thicker the more it's wound up.
         if (!reduced) {
-          for (let i = spawnCount(sparkRate(shown) * dt); i > 0; i--) {
+          for (let i = spawnCount(sparkRate(shown, activity) * dt); i > 0; i--) {
             const free = motes.findIndex((m) => !m.live);
             if (free < 0) break;
             const ang = Math.random() * TAU;
@@ -559,7 +576,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
               mAlpha[i] = 0;
               return;
             }
-            m.life += dt;
+            m.life += dt * burn;
             if (m.life >= m.max) {
               m.live = false;
               mAlpha[i] = 0;
@@ -625,6 +642,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
       const onWheel = (e: WheelEvent) => {
         boost = Math.max(-0.12, Math.min(0.12, boost + e.deltaY * 0.0006));
         energy = addSpin(energy, e.deltaY);
+        activity = addActivity(activity, e.deltaY);
       };
       const onPointerMove = (e: PointerEvent) => {
         mouseX = e.clientX / window.innerWidth - 0.5;
@@ -644,6 +662,7 @@ export function HoloCore3D({ onUnsupported }: HoloCore3DProps) {
         touchY = y;
         boost = Math.max(-0.12, Math.min(0.12, boost + dy * 0.0006));
         energy = addSpin(energy, dy);
+        activity = addActivity(activity, dy);
       };
       window.addEventListener("wheel", onWheel, { passive: true });
       window.addEventListener("touchstart", onTouchStart, { passive: true });

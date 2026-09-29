@@ -229,6 +229,12 @@ if (!(await p.locator("h2").first().innerText()).includes("SIGNAL")) fail.push("
     for (let i = 0; i < 12; i++) await hp.mouse.wheel(0, 120);
     await hp.waitForTimeout(1500);
     if ((await energy()) < 0.2) fail.push("scrolling did not wind up the home spike");
+
+    // Effects outside the device stop once you stop spinning; the charge (glow) lingers.
+    const activity = async () => Number(await canvas.getAttribute("data-activity"));
+    await hp.waitForTimeout(6000);
+    if ((await activity()) > 0.05) fail.push("home spike effects kept spawning after scrolling stopped");
+    if ((await energy()) < 0.1) fail.push("home spike charge drained immediately instead of lingering");
   }
 
   // The hero text can't be selected: a drag while spinning mustn't paint over the name.
