@@ -11,12 +11,15 @@ rather than installed globally. Each folder keeps its upstream licence.
 
 ## Deliberate omissions
 
-- **Impeccable's `scripts/` folder is left out.** Its launcher downloads and runs a prebuilt
-  binary from the project's GitHub releases, and the upstream repo's settings wire that binary
-  into hooks on every edit and at session end. Without `scripts/`, the skill uses its own
-  documented fallback: it reads the project's context directly, so critique, audit and polish
-  still work, but the automatic detector rules and live-browser mode do not. To opt in, copy
-  `scripts/` from the pinned commit after reviewing it. No hooks are installed either way.
+- **Impeccable's `scripts/` folder is included.** Everything in it was reviewed: the browser
+  scripts only talk to Impeccable's own local server on `localhost`, authenticated with a
+  token. The launcher (`scripts/impeccable`) runs a prebuilt engine binary that is **not in
+  this repo**: on first use it downloads the binary for your platform from
+  github.com/pbakaus/impeccable/releases into `~/.impeccable/`, and refuses to run it unless it
+  matches the published `.sha256` checksum. That checksum proves the download wasn't corrupted,
+  not what the binary does, so the engine itself is trusted, not reviewed.
+- **No hooks are installed.** Upstream wires the engine into hooks that run after every edit and
+  at session end; that is opt-in here via `/impeccable hooks on`.
 - **threejs-webgl dates from Nov 2025** and its examples target Three.js r160; this project
   uses r186. Check API details against the installed version.
 - Emil Kowalski's Swift, Expo, mobile-native, Sonner, prototype and pick-ui-library skills
