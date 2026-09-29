@@ -12,8 +12,9 @@ import type { Part } from "./spike";
  * World units, y up. The floor is at y = −1.04 and the emitter tops out near 1.33, the same
  * envelope as the flat drawing in `spike.ts`, so the page layout does not move.
  *
- * Everything that animates is driven from `update()` with the same charge / flare / heartbeat
- * signals the scene already computes; this module owns no clock of its own.
+ * The glow is steady; only mechanical parts move (energy rings climbing the core, the helix,
+ * the casing ring riding up and down, the floor HUD turning). Everything is driven from
+ * `update()`; this module owns no clock of its own.
  */
 
 // ── Palette ────────────────────────────────────────────────────────────────
@@ -33,14 +34,8 @@ export interface SpikeFrame {
   /** Seconds since start (0 under reduced motion). */
   t: number;
   dt: number;
-  /** 0–1: how armed the device is. */
-  charge: number;
-  /** 0–1: the peak flare. */
-  flare: number;
-  /** Heartbeat phase in radians; it advances faster as the charge climbs. */
-  beatPhase: number;
-  /** Overall glow multiplier the scene derives from the above. */
-  glowK: number;
+  /** 0–1: overall brightness of the device's lights. */
+  glow: number;
 }
 
 export interface SpikeModel {
@@ -150,7 +145,6 @@ const VIEW_VERT = /* glsl */ `
 const CORE_FRAG = /* glsl */ `
   uniform float uTime;
   uniform float uCharge;
-  uniform float uFlare;
   uniform vec3 uColor;
   varying vec3 vN;
   varying vec3 vV;
@@ -159,12 +153,12 @@ const CORE_FRAG = /* glsl */ `
     float facing = abs(dot(normalize(vN), normalize(vV)));
     float rim = pow(1.0 - facing, 2.0);
     float centre = pow(facing, 5.0);
-    float bands = 0.5 + 0.5 * sin(vY * 13.0 - uTime * (2.0 + uCharge * 7.0));
-    bands = smoothstep(0.4, 1.0, bands) * (0.2 + uCharge * 0.8);
-    float flicker = 0.92 + 0.08 * sin(uTime * 37.0 + vY * 5.0);
-    float energy = (0.03 + rim * 0.6 + centre * (0.25 + uCharge * 1.2) + bands * 0.45) * flicker;
-    energy *= 0.35 + uCharge * 1.05 + uFlare * 0.6;
-    vec3 hot = mix(uColor, vec3(1.0), clamp(uCharge * 0.5 + uFlare * 0.45 + centre * 0.35, 0.0, 1.0));
+    // Soft bands drift up the column; no flicker, so the light reads as steady.
+    float bands = 0.5 + 0.5 * sin(vY * 13.0 - uTime * 2.2);
+    bands = smoothstep(0.4, 1.0, bands) * 0.35;
+    float energy = 0.03 + rim * 0.6 + centre * (0.25 + uCharge * 0.8) + bands * 0.4;
+    energy *= 0.25 + uCharge * 0.6;
+    vec3 hot = mix(uColor, vec3(1.0), clamp(uCharge * 0.35 + centre * 0.3, 0.0, 1.0));
     gl_FragColor = vec4(hot * energy, 1.0);
   }
 `;
@@ -181,23 +175,9 @@ const GLASS_FRAG = /* glsl */ `
     float edge = pow(1.0 - facing, 4.0);
     // Two faint horizontal reflection streaks, like a studio softbox on a tube.
     float streak = smoothstep(0.02, 0.0, abs(fract(vY * 0.9 + 0.2) - 0.5) - 0.45) * 0.05;
-    float a = edge * 0.75 + streak + 0.008;
+    float a = edge * 0.6 + streak + 0.006;
     vec3 c = mix(vec3(0.85, 0.82, 0.95), uColor, 0.45) * (0.5 + uGlow * 0.5);
     gl_FragColor = vec4(c * a, 1.0);
-  }
-`;
-
-/** Expanding shockwave shell: bright only at its silhouette, fading as it grows. */
-const SHELL_FRAG = /* glsl */ `
-  uniform float uAlpha;
-  uniform vec3 uColor;
-  varying vec3 vN;
-  varying vec3 vV;
-  varying float vY;
-  void main() {
-    float facing = abs(dot(normalize(vN), normalize(vV)));
-    float edge = pow(1.0 - facing, 3.0);
-    gl_FragColor = vec4(uColor * edge * uAlpha, 1.0);
   }
 `;
 
@@ -260,7 +240,7 @@ export function buildSpikeModel(): SpikeModel {
     new THREE.ShaderMaterial({
       vertexShader: VIEW_VERT,
       fragmentShader: CORE_FRAG,
-      uniforms: { uTime: { value: 0 }, uCharge: { value: 0 }, uFlare: { value: 0 }, uColor: { value: ACC.clone() } },
+      uniforms: { uTime: { value: 0 }, uCharge: { value: 0 }, uColor: { value: ACC.clone() } },
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -578,155 +558,47 @@ export function buildSpikeModel(): SpikeModel {
   });
 
   const hotCol = new THREE.Color();
-  const pulse = (x: number, sharp: number) => Math.pow(Math.max(0, Math.sin(x)), sharp);
 
   return {
     group,
-    update({ t, dt, charge, flare, beatPhase, glowK }) {
-      const beat = pulse(beatPhase, 6);
-      const white = Math.min(1, charge * 0.55 + flare * 0.45);
-      hotCol.copy(ACC).lerp(HOT, white);
+    update({ t, dt, glow }) {
+      hotCol.copy(ACC).lerp(HOT, glow * 0.35);
 
-      armour.emissiveIntensity = glowK * 0.015;
+      armour.emissiveIntensity = glow * 0.01;
       coreMat.uniforms.uTime.value = t;
-      coreMat.uniforms.uCharge.value = charge + beat * 0.1;
-      coreMat.uniforms.uFlare.value = flare;
-      glassMat.uniforms.uGlow.value = Math.min(1.5, glowK);
-      filamentMat.color.copy(HOT).multiplyScalar(0.55 + Math.min(glowK, 1.6) * 0.9);
-      emitterMat.color.copy(HOT).multiplyScalar(0.4 + beat * 1.2 + flare);
-      seamMat.color.copy(hotCol).multiplyScalar(0.55 + glowK * 0.8);
-      underglowMat.color.copy(hotCol).multiplyScalar(0.35 + glowK * 0.6);
-      channelMat.color.copy(hotCol).multiplyScalar(0.35 + beat * 0.9 + charge * 0.5);
-      for (const l of coreLights) l.intensity = 0.15 + Math.min(glowK, 1.6) * 1.7;
+      coreMat.uniforms.uCharge.value = glow;
+      glassMat.uniforms.uGlow.value = glow;
+      filamentMat.color.copy(HOT).multiplyScalar(0.35 + glow * 0.4);
+      emitterMat.color.copy(HOT).multiplyScalar(0.35 + glow * 0.5);
+      seamMat.color.copy(hotCol).multiplyScalar(0.4 + glow * 0.45);
+      underglowMat.color.copy(hotCol).multiplyScalar(0.25 + glow * 0.35);
+      channelMat.color.copy(hotCol).multiplyScalar(0.3 + glow * 0.4);
+      for (const m of cellMats) m.color.copy(hotCol).multiplyScalar(0.3 + glow * 0.4);
+      for (const l of coreLights) l.intensity = 0.15 + glow * 1.4;
 
-      // Light cells chase around the body on every beat, like the device counting down.
-      cellMats.forEach((m, i) => {
-        const on = pulse(beatPhase - i * 0.33, 10);
-        m.color.copy(hotCol).multiplyScalar(0.12 + on * (1.2 + charge));
-      });
-
-      // Energy rings climb the core and fade in and out at the ends.
-      const climb = (0.2 + charge * 1.1) * dt;
+      // Energy rings climb the core at a steady pace and fade in and out at the ends.
+      const span = CH_TOP - CH_BOT - 0.12;
       energyRings.forEach((ring, i) => {
-        const span = CH_TOP - CH_BOT - 0.12;
-        const base = ((ring.userData.u as number | undefined) ?? i / energyRings.length) + climb / span;
-        const u = base % 1;
+        const u = (((ring.userData.u as number | undefined) ?? i / energyRings.length) + (0.35 * dt) / span) % 1;
         ring.userData.u = u;
         ring.position.y = CH_BOT + 0.06 + u * span;
-        ringMats[i].opacity = Math.sin(u * Math.PI) * (0.25 + charge * 0.75 + flare * 0.5);
-        ring.scale.setScalar(1 + beat * 0.05);
+        ringMats[i].opacity = Math.sin(u * Math.PI) * (0.2 + glow * 0.35);
       });
 
-      helix.rotation.y = t * (0.6 + charge * 2.4);
-      helixMat.opacity = 0.15 + charge * 0.5 + flare * 0.3;
+      helix.rotation.y = t * 0.9;
+      helixMat.opacity = 0.12 + glow * 0.2;
 
-      // The casing rides up as it charges and drops back on release.
-      casing.position.y = -0.36 + Math.pow(charge, 1.4) * 1.0;
+      // The casing rides slowly up the chamber and back: mechanical, not a light pulse.
+      casing.position.y = -0.36 + (0.5 - 0.5 * Math.cos(t * 0.35)) * 0.9;
       casing.rotation.y = -t * 0.15;
 
       hud.rotation.z = t * 0.12;
-      hudMat.opacity = 0.12 + beat * 0.12 + charge * 0.2 + flare * 0.3;
+      hudMat.opacity = 0.1 + glow * 0.12;
     },
     dispose() {
       group.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
       for (const m of materials) m.dispose();
       for (const tex of textures) tex.dispose();
-    },
-  };
-}
-
-// ── Shockwaves ─────────────────────────────────────────────────────────────
-
-export interface Shockwaves {
-  group: THREE.Group;
-  /** Starts a wave; `strength` 0–1 scales its size and brightness. */
-  fire(strength?: number): void;
-  update(dt: number): void;
-  dispose(): void;
-}
-
-const WAVE_TIME = 1.15;
-
-/**
- * Detonation-style shockwaves: a bright ring racing out across the floor and a fresnel shell
- * expanding around the device, both fading as they grow. A small pool, reused.
- */
-export function createShockwaves(count = 4): Shockwaves {
-  const group = new THREE.Group();
-  group.name = "shockwaves";
-  const ringTex = canvasTexture(256, (g, s) => {
-    const grad = g.createRadialGradient(s / 2, s / 2, s * 0.3, s / 2, s / 2, s / 2);
-    grad.addColorStop(0, "rgba(185,135,255,0)");
-    grad.addColorStop(0.72, "rgba(185,135,255,0.35)");
-    grad.addColorStop(0.9, "rgba(244,236,255,1)");
-    grad.addColorStop(1, "rgba(185,135,255,0)");
-    g.fillStyle = grad;
-    g.fillRect(0, 0, s, s);
-  });
-  const shellGeo = new THREE.SphereGeometry(1, 48, 32);
-  const ringGeo = new THREE.PlaneGeometry(2, 2);
-  const waves = Array.from({ length: count }, () => {
-    const ringMat = new THREE.MeshBasicMaterial({
-      map: ringTex,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      toneMapped: false,
-    });
-    const ring = new THREE.Mesh(ringGeo, ringMat);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = FLOOR + 0.006;
-    ring.renderOrder = 1;
-    const shellMat = new THREE.ShaderMaterial({
-      vertexShader: VIEW_VERT,
-      fragmentShader: SHELL_FRAG,
-      uniforms: { uAlpha: { value: 0 }, uColor: { value: ACC.clone() } },
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-    const shell = new THREE.Mesh(shellGeo, shellMat);
-    shell.position.y = 0.1;
-    ring.visible = shell.visible = false;
-    group.add(ring, shell);
-    return { ring, shell, ringMat, shellMat, age: -1, strength: 1 };
-  });
-
-  return {
-    group,
-    fire(strength = 1) {
-      // Reuse the oldest wave if every slot is busy.
-      const w = waves.find((x) => x.age < 0) ?? waves.reduce((a, b) => (a.age > b.age ? a : b));
-      w.age = 0;
-      w.strength = Math.min(1, Math.max(0.2, strength));
-    },
-    update(dt) {
-      for (const w of waves) {
-        if (w.age < 0) continue;
-        w.age += dt;
-        const k = w.age / WAVE_TIME;
-        if (k >= 1) {
-          w.age = -1;
-          w.ring.visible = w.shell.visible = false;
-          continue;
-        }
-        const ease = 1 - Math.pow(1 - k, 3);
-        const fade = Math.pow(1 - k, 2) * w.strength;
-        w.ring.visible = w.shell.visible = true;
-        w.ring.scale.setScalar(0.6 + ease * 2.6 * (0.6 + w.strength * 0.4));
-        w.ringMat.opacity = fade;
-        w.shell.scale.setScalar(0.5 + ease * 2.4 * (0.6 + w.strength * 0.4));
-        w.shellMat.uniforms.uAlpha.value = fade * 0.6;
-      }
-    },
-    dispose() {
-      shellGeo.dispose();
-      ringGeo.dispose();
-      ringTex.dispose();
-      for (const w of waves) {
-        w.ringMat.dispose();
-        w.shellMat.dispose();
-      }
     },
   };
 }

@@ -1,15 +1,12 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 
-import { buildSpikeModel, createShockwaves } from "./model";
+import { buildSpikeModel } from "./model";
 
 const frame = (over: Partial<Parameters<ReturnType<typeof buildSpikeModel>["update"]>[0]> = {}) => ({
   t: 1,
   dt: 1 / 60,
-  charge: 0.5,
-  flare: 0,
-  beatPhase: 1,
-  glowK: 1,
+  glow: 0.5,
   ...over,
 });
 
@@ -61,22 +58,31 @@ describe("buildSpikeModel", () => {
     expect(tris).toBeLessThan(250000);
   });
 
-  it("raises the casing ring as it charges", () => {
+  it("rides the casing ring up and down the chamber over time", () => {
     const model = buildSpikeModel();
     const casing = model.group.getObjectByName("casing ring")!;
-    model.update(frame({ charge: 0.08 }));
+    model.update(frame({ t: 0 }));
     const low = casing.position.y;
-    model.update(frame({ charge: 1 }));
+    model.update(frame({ t: Math.PI / 0.35 }));
     expect(casing.position.y).toBeGreaterThan(low + 0.5);
   });
 
-  it("chases the light cells: not every cell is lit at once", () => {
+  it("holds its lights steady: no pulse from one moment to the next", () => {
     const model = buildSpikeModel();
-    model.update(frame({ beatPhase: Math.PI / 2 }));
-    const levels = model.group.children
+    const lights = () =>
+      model.group.children
+        .filter((o): o is THREE.Mesh => /^(light cell|glowing seam|emitter)/.test(o.name))
+        .map((c) => (c.material as THREE.MeshBasicMaterial).color.getHex());
+    model.update(frame({ t: 0.3 }));
+    const a = lights();
+    model.update(frame({ t: 7.9 }));
+    expect(lights()).toEqual(a);
+    // …and every light cell is lit alike, rather than chasing.
+    const cells = model.group.children
       .filter((o): o is THREE.Mesh => o.name.startsWith("light cell"))
-      .map((c) => (c.material as THREE.MeshBasicMaterial).color.r);
-    expect(Math.max(...levels) - Math.min(...levels)).toBeGreaterThan(0.2);
+      .map((c) => (c.material as THREE.MeshBasicMaterial).color.getHex());
+    expect(cells).toHaveLength(9);
+    expect(new Set(cells).size).toBe(1);
   });
 
   it("moves the energy rings up the core over time", () => {
@@ -84,7 +90,7 @@ describe("buildSpikeModel", () => {
     const ring = model.group.getObjectByName("energy ring 1")!;
     model.update(frame({ dt: 0 }));
     const y0 = ring.position.y;
-    model.update(frame({ dt: 0.2, charge: 0.8 }));
+    model.update(frame({ dt: 0.2 }));
     expect(ring.position.y).not.toBe(y0);
   });
 
@@ -98,32 +104,5 @@ describe("buildSpikeModel", () => {
     });
     model.dispose();
     for (const s of spies) expect(s).toHaveBeenCalled();
-  });
-});
-
-describe("createShockwaves", () => {
-  it("fires, expands, and retires a wave", () => {
-    const waves = createShockwaves(2);
-    const visible = () => waves.group.children.filter((o) => o.visible).length;
-    expect(visible()).toBe(0);
-    waves.fire(1);
-    waves.update(0.1);
-    expect(visible()).toBe(2); // ring + shell
-    const shell = waves.group.children.find((o) => o.visible && o instanceof THREE.Mesh && o.geometry.type === "SphereGeometry")!;
-    const s0 = shell.scale.x;
-    waves.update(0.3);
-    expect(shell.scale.x).toBeGreaterThan(s0);
-    waves.update(2);
-    expect(visible()).toBe(0);
-  });
-
-  it("reuses the oldest wave when the pool is full", () => {
-    const waves = createShockwaves(1);
-    waves.fire(1);
-    waves.update(0.5);
-    waves.fire(1);
-    waves.update(0.01);
-    const shell = waves.group.children.find((o) => o instanceof THREE.Mesh && o.geometry.type === "SphereGeometry")!;
-    expect(shell.scale.x).toBeLessThan(0.7);
   });
 });
