@@ -12,8 +12,9 @@ and an interactive SVG globe.
   No component library: the design is entirely bespoke, so one would only get in the way.
 - **next/font** self-hosts Bebas Neue, Chakra Petch and Azeret Mono — no layout shift, no
   requests to Google.
-- No animation library. Everything is CSS keyframes plus one `requestAnimationFrame` tween
-  for the globe.
+- **Three.js** for the two 3D scenes (the home spike and the travel globe), imported on demand
+  so it stays out of every other page and out of first paint. Everything else is CSS keyframes
+  plus a `requestAnimationFrame` tween for the globe. No animation library.
 
 ## Commands
 
@@ -67,10 +68,19 @@ To add the full-bleed background, set `site.background` in `src/content/site.ts`
   worth remembering if one ever gets long.
 - **State is never carried by colour alone.** Selected items also carry a filled block or a
   word, and planned trips say `PLANNED` in text. Keep it that way.
-- **The globe** is an orthographic projection re-generated every frame. Coastlines are drawn
-  stroke-only; if you ever switch to filled land you must close partial rings along the limb
-  with SVG arc commands. The coastline data is Natural Earth 1:110m (public domain) via
-  `world-atlas`, so the prototype's hand-authored `land.js` is gone.
+- **The globe** is a real Three.js sphere. Coastlines and the graticule are line segments on its
+  surface (`lib/globe/sphere.ts`, unit tested), and depth testing hides the far side, so there is
+  no horizon clipping to get right. Drag and the fly-to tween steer the group's rotation.
+  The marker's click target is a real `<button>` laid over the canvas and repositioned each
+  frame, so it is keyboard-reachable; it is hidden while the marker is on the far side. The
+  coastline data is Natural Earth 1:110m (public domain) via `world-atlas`.
+- **The home spike** is a lit, faceted Three.js model built from `lib/holo/spike.ts` (converted to
+  triangles in `lib/holo/geometry.ts`). The core is additive glow plus a point light that
+  spills onto the struts; the arcs are camera-facing ribbons rebuilt each frame; motes are a
+  point cloud. Charge and flare come from the same `chargeAt` cycle as before.
+- **Both scenes fall back to the earlier flat drawings** (`HoloCore2D`, `Globe2D`) if WebGL or
+  the Three.js chunk is unavailable, rather than going blank. The e2e suite checks this by
+  launching with WebGL disabled. Delete the 2D files if you would rather not maintain them.
 - **The boot screen** plays once per session and is skipped entirely under
   `prefers-reduced-motion`. That decision is made by a tiny inline script before first paint,
   so returning visitors never see a flash of it. Add **`?boot`** to any URL to replay it
