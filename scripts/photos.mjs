@@ -12,7 +12,7 @@
  * Each photo is rotated upright, stripped of all metadata (including GPS), saved as a
  * 1600px and a 640px WebP named by content hash, and uploaded with an immutable cache
  * header. src/content/media.generated.json records it; the original moves to
- * .photo-inbox/done/. Credentials come from .env.local (see docs/food.md).
+ * .photo-inbox/done/. Credentials come from .env.local or .env (see docs/food.md).
  */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -53,7 +53,7 @@ function r2() {
     .filter(([, v]) => !v)
     .map(([k]) => k);
   if (missing.length) {
-    console.error(`Missing ${missing.join(", ")} in .env.local (see docs/food.md).`);
+    console.error(`Missing ${missing.join(", ")} in .env.local or .env (see docs/food.md).`);
     process.exit(1);
   }
   const client = new S3Client({

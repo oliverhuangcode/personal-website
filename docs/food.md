@@ -26,7 +26,7 @@ Google Sheet ──(daily Action / npm run food:sync)──▶ food.generated.js
    - Permissions: **Object Read & Write**
    - Specify bucket: **oh-media** only
    - Create it, then copy the **Access Key ID** and the **Secret Access Key** (the secret is only shown once). Also copy your **Account ID**, which is on the R2 overview page.
-6. Run `cp .env.example .env.local` and fill in the R2 values. `.env.local` is gitignored.
+6. Run `cp .env.example .env.local` (or `.env`) and fill in the R2 values. Both are gitignored.
 7. `MEDIA_BASE` in `src/content/site.ts` is already `https://media.olivrhuang.com`.
 8. Run `npm run photos -- --check`. It should print `R2 OK`.
 

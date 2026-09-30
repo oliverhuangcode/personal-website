@@ -1,7 +1,7 @@
 /**
  * Pulls the food log from the published Google Sheet into src/content/food.generated.json.
  *
- *   npm run food:sync                         # FOOD_SHEET_CSV_URL from env or .env.local
+ *   npm run food:sync                         # FOOD_SHEET_CSV_URL from env, .env.local or .env
  *   npm run food:sync -- --file sheet.csv     # a local export instead
  *
  * Bad rows are skipped with a warning. If the sheet can't be fetched, isn't CSV, or has no
