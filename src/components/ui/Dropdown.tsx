@@ -39,7 +39,9 @@ function Chevron({ open }: { open: boolean }) {
  * Esc to close — and every key it handles is kept from the page's own shortcuts.
  */
 export function Dropdown({ label, value, options, onChange, className = "" }: DropdownProps) {
-  const [open, setOpen] = useState(false);
+  // "closing" keeps the menu mounted while it folds back into the trigger.
+  const [phase, setPhase] = useState<"closed" | "open" | "closing">("closed");
+  const open = phase === "open";
   const [active, setActive] = useState(0);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -54,10 +56,10 @@ export function Dropdown({ label, value, options, onChange, className = "" }: Dr
 
   const show = (at = selectedIndex) => {
     setActive(at);
-    setOpen(true);
+    setPhase("open");
   };
   const close = (refocus = true) => {
-    setOpen(false);
+    setPhase((p) => (p === "open" ? "closing" : p));
     if (refocus) trigger.current?.focus();
   };
   const pick = (i: number) => {
@@ -73,7 +75,7 @@ export function Dropdown({ label, value, options, onChange, className = "" }: Dr
     if (!open) return;
     list.current?.focus();
     const onPointer = (e: PointerEvent) => {
-      if (!root.current?.contains(e.target as Node)) setOpen(false);
+      if (!root.current?.contains(e.target as Node)) close(false);
     };
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
@@ -140,7 +142,7 @@ export function Dropdown({ label, value, options, onChange, className = "" }: Dr
             show(e.key === "ArrowUp" ? options.length - 1 : selectedIndex);
           }
         }}
-        className={`chamfer-br flex w-full items-center gap-2.5 bg-panel-raised py-2.5 pr-4 pl-3 text-left transition-colors duration-150 hover:bg-chip ${
+        className={`chamfer-br flex w-full items-center gap-2.5 bg-panel-raised py-2.5 pr-4 pl-3 text-left transition-[color,background-color,scale] duration-150 ease-snap hover:bg-chip active:scale-[0.97] ${
           open ? "text-accent" : "text-ink"
         }`}
       >
@@ -155,7 +157,7 @@ export function Dropdown({ label, value, options, onChange, className = "" }: Dr
         className={`absolute inset-x-0 bottom-0 h-px transition-colors duration-150 ${open || value ? "bg-accent" : "bg-border-strong"}`}
       />
 
-      {open && (
+      {phase !== "closed" && (
         <ul
           ref={list}
           id={`${id}-list`}
@@ -164,7 +166,12 @@ export function Dropdown({ label, value, options, onChange, className = "" }: Dr
           aria-label={label}
           aria-activedescendant={`${id}-${active}`}
           onKeyDown={onListKey}
-          className="absolute inset-x-0 top-[calc(100%+4px)] z-30 flex max-h-[min(320px,50dvh)] animate-drop flex-col gap-px overflow-y-auto overscroll-contain border border-border-strong bg-hairline shadow-[0_18px_40px_-12px_rgb(0_0_0/0.8)] outline-none [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
+          onAnimationEnd={(e) => {
+            if (e.target === e.currentTarget && phase === "closing") setPhase("closed");
+          }}
+          className={`absolute inset-x-0 top-[calc(100%+4px)] z-30 flex max-h-[min(320px,50dvh)] ${
+            open ? "animate-drop" : "pointer-events-none animate-lift"
+          } flex-col gap-px overflow-y-auto overscroll-contain border border-border-strong bg-hairline shadow-[0_18px_40px_-12px_rgb(0_0_0/0.8)] outline-none [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]`}
         >
           {options.map((o, i) => {
             const isSelected = i === selectedIndex;

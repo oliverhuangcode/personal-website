@@ -40,7 +40,7 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
               }}
               onFocus={() => setSelected(i)}
               onMouseEnter={() => setSelected(i)}
-              className="group chamfer-tr relative flex h-full outline-none min-h-[clamp(150px,15vw,184px)] flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink"
+              className="group chamfer-tr relative flex h-full min-h-[clamp(150px,15vw,184px)] outline-none transition-[scale] duration-150 ease-snap active:scale-[0.99] flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink"
             >
               {/* The photo layer sits behind the text; its own wrapper keeps MediaFrame's `relative` from taking part in the layout. */}
               <div aria-hidden className="absolute inset-0">

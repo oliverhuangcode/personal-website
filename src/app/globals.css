@@ -50,8 +50,9 @@
   --animate-pulse: pulse 1.4s ease-in-out infinite;
   /* Selection feedback: fast, decelerating, no overshoot — a HUD snaps, it doesn't bounce. */
   --animate-wipe: wipe 0.26s var(--ease-snap) both;
-  /* Menus unfold downward from their trigger. */
+  /* Menus unfold downward from their trigger, and fold back into it a little faster. */
   --animate-drop: drop 0.22s var(--ease-snap) both;
+  --animate-lift: lift 0.14s cubic-bezier(0.7, 0, 0.84, 0) both;
   --animate-enter: enter 0.28s var(--ease-snap) both;
   /* Tab content: switched often, so it only fades, fast and with no delay. */
   --animate-swap: swap 0.16s var(--ease-snap) both;
@@ -108,6 +109,11 @@
     }
     to {
       clip-path: inset(0);
+    }
+  }
+  @keyframes lift {
+    to {
+      clip-path: inset(0 0 100% 0);
     }
   }
   @keyframes enter {

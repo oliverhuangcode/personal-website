@@ -15,7 +15,8 @@ interface PhotoCarouselProps {
 }
 
 /** Arrows and dots keep a 36px hit area around their small marks, for thumbs. */
-const arrow = "min-h-9 min-w-9 font-mono text-[12px] text-ink-muted hover:text-ink";
+const arrow =
+  "min-h-9 min-w-9 font-mono text-[12px] text-ink-muted transition-[color,scale] duration-150 ease-snap hover:text-ink active:scale-[0.97]";
 
 /** One slide per photo. Controls only appear when there is more than one. */
 export function PhotoCarousel({ photos, fallbacks, index, onChange, label, revealKey }: PhotoCarouselProps) {

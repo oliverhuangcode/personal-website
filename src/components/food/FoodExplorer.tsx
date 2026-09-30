@@ -11,7 +11,9 @@ import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
-const pagerButton = "min-h-9 min-w-9 px-2.5 py-1.5 hover:text-ink";
+/** Small presses give way slightly, so a tap reads as landed. */
+const press = "transition-[color,background-color,scale] duration-150 ease-snap active:scale-[0.97]";
+const pagerButton = `min-h-9 min-w-9 px-2.5 py-1.5 hover:text-ink ${press}`;
 const chip = "px-[11px] py-[5px]";
 const label = "font-mono text-[11px] tracking-[0.22em] text-ink-muted";
 /** Above this many spots the roster gets a search field. */
@@ -65,6 +67,12 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
   const [cuisine, setCuisine] = useState("");
   const [query, setQuery] = useState("");
   const [limit, setLimit] = useState(PAGE);
+  // Rows from this index on arrived with the last SHOW MORE, so only they animate in.
+  const [revealFrom, setRevealFrom] = useState(Infinity);
+  const resetPaging = () => {
+    setLimit(PAGE);
+    setRevealFrom(Infinity);
+  };
   const [selected, setSelected] = useState(restaurants[0]?.slug);
   const [dishIndex, setDishIndex] = useState<Record<string, number>>({});
   const listRef = useRef<HTMLOListElement>(null);
@@ -162,7 +170,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
 
   const clearFilters = () => {
     blip("tab");
-    setLimit(PAGE);
+    resetPaging();
     startTransition(() => {
       setCuisine("");
       setQuery("");
@@ -192,7 +200,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                 ...kinds.map((k) => ({ value: k, label: k, count: kindCounts.get(k) })),
               ]}
               onChange={(next) => {
-                setLimit(PAGE);
+                resetPaging();
                 startTransition(() => setCuisine(next));
               }}
               className="min-w-[200px] flex-1"
@@ -207,7 +215,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
             type="search"
             value={query}
             onChange={(e) => {
-              setLimit(PAGE);
+              resetPaging();
               setQuery(e.target.value);
             }}
             placeholder="SEARCH NAME, CUISINE, AREA OR #RANK"
@@ -216,16 +224,23 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
           />
         )}
 
+        {/* Keyed on the cuisine so a new filter fades its list in; typing in search doesn't. */}
         <ol
+          key={cuisine || "all"}
           ref={listRef}
           aria-label="Restaurant rankings"
-          className="hairline-group lg:max-h-[min(58dvh,520px)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
+          className="hairline-group animate-swap lg:max-h-[min(58dvh,520px)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
         >
-          {shown.map((r) => {
+          {shown.map((r, i) => {
             const active = r.slug === place?.slug;
             const n = rank.get(r.slug)!;
+            const arriving = i >= revealFrom;
             return (
-              <li key={r.slug}>
+              <li
+                key={r.slug}
+                className={arriving ? "animate-enter" : undefined}
+                style={arriving ? stagger(Math.min((i - revealFrom) * 0.03, 0.24)) : undefined}
+              >
                 <button
                   type="button"
                   aria-current={active}
@@ -255,6 +270,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                 type="button"
                 onClick={() => {
                   blip("tab");
+                  setRevealFrom(shown.length);
                   setLimit(shown.length + PAGE);
                 }}
                 className="sweep w-full bg-panel-glass px-[15px] py-3 text-left font-mono text-[11px] tracking-[0.14em] text-ink-muted"
@@ -266,7 +282,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
           {!visible.length && (
             <li className="flex items-center justify-between gap-3 bg-panel-glass px-[15px] py-3 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
               NO MATCHES
-              <button type="button" onClick={clearFilters} className="px-2 py-1 text-accent hover:text-accent-hover">
+              <button type="button" onClick={clearFilters} className={`px-2 py-1 text-accent hover:text-accent-hover ${press}`}>
                 CLEAR FILTERS
               </button>
             </li>
