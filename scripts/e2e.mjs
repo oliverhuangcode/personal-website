@@ -13,7 +13,7 @@ const fail = [];
 // 1. No horizontal overflow anywhere
 for (const [w, h] of [[1360, 880], [768, 1024], [390, 844], [320, 720]]) {
   const p = await (await b.newContext({ viewport: { width: w, height: h } })).newPage();
-  for (const path of ["/", "/about", "/projects", "/travel", "/food", "/food/melbourne"]) {
+  for (const path of ["/", "/about", "/projects", "/travel", "/food", "/food/rankings", "/food/melbourne"]) {
     await p.goto(base + path);
     await p.waitForTimeout(400);
     const { sw, cw } = await p.evaluate(() => ({
@@ -151,18 +151,25 @@ if (!(await shows(p.locator("h2"), "WEAVE"))) fail.push("project name did not up
   await audio.close();
 }
 
-// 9. Up/down cycle pages; left/right are left to the page and its controls
+// 9. Up/down cycle pages; left/right belong to the page (on /food they switch tabs)
 {
   const kp = await (await b.newContext({ viewport: { width: 1360, height: 600 } })).newPage();
   await kp.goto(base + "/food");
   await kp.waitForTimeout(3400);
 
-  // Left and right must not navigate.
-  for (const key of ["ArrowRight", "ArrowLeft"]) {
-    await kp.keyboard.press(key);
-    await kp.waitForTimeout(200);
-    if (new URL(kp.url()).pathname !== "/food") fail.push(`${key} navigated away from /food`);
-  }
+  // Left and right switch the food tabs, wrapping, and never leave the section.
+  await kp.keyboard.press("ArrowRight");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/food/rankings") fail.push("ArrowRight did not switch to RANKINGS");
+  await kp.keyboard.press("ArrowRight");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/food") fail.push("ArrowRight did not wrap back to CITIES");
+  await kp.keyboard.press("ArrowLeft");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/food/rankings") fail.push("ArrowLeft did not wrap to RANKINGS");
+  await kp.keyboard.press("ArrowLeft");
+  await kp.waitForTimeout(500);
+  if (new URL(kp.url()).pathname !== "/food") fail.push("ArrowLeft did not switch to CITIES");
 
   // Down and up cycle in visual nav order: about, projects, home, travel, food.
   await kp.keyboard.press("ArrowDown");

@@ -5,7 +5,7 @@ import { startTransition, useEffect, useMemo, useRef, useState, ViewTransition }
 import { Dropdown } from "@/components/ui/Dropdown";
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import type { Restaurant } from "@/content/types";
-import { cuisines, formatVisited, METER_FLOOR, meterPercent } from "@/lib/food";
+import { cuisines, formatVisited, meterPercent } from "@/lib/food";
 import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
@@ -32,23 +32,17 @@ function Highlight({ name }: { name: string }) {
   );
 }
 
-/** Whole-number marks along the meter's 5–10 run. */
-const METER_TICKS = Array.from({ length: 10 - METER_FLOOR - 1 }, (_, i) => METER_FLOOR + 1 + i);
-
 /**
- * Score bar starting at 5 (see `meterPercent`), marked at each whole point. It stays mounted
- * across picks, so after its first fill it travels from one score to the next.
+ * Score bar starting at 5 (see `meterPercent`). It stays mounted across picks, so after
+ * its first fill it travels from one score to the next.
  */
 function Meter({ score }: { score: number }) {
   return (
-    <div aria-hidden className="relative h-2 bg-chip">
+    <div aria-hidden className="h-2 bg-chip">
       <div
         className="h-full origin-left animate-meter bg-accent transition-[width] duration-[1400ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
         style={{ width: `${meterPercent(score)}%`, ...stagger(0.12) }}
       />
-      {METER_TICKS.map((n) => (
-        <span key={n} className="absolute inset-y-0 w-px bg-bg" style={{ left: `${meterPercent(n)}%` }} />
-      ))}
     </div>
   );
 }

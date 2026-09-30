@@ -1,26 +1,16 @@
 "use client";
 
-import { startTransition, useRef, useState, ViewTransition } from "react";
+import { useState, ViewTransition } from "react";
 
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { NavLink } from "@/components/ui/NavLink";
-import { useArrowCycle } from "@/lib/keys";
 import { formatCoords, type CitySummary } from "@/lib/food";
 import { stagger } from "@/lib/motion";
 import { pad3 } from "@/lib/nav";
-import { blip } from "@/lib/sound/sound";
 
-/** Map-select style city banners. ← / → move the pick and focus it, so Enter opens it. */
+/** Map-select style city banners. The pick follows the pointer and keyboard focus; ← / → belong to the food tabs. */
 export function CitySelect({ cities }: { cities: CitySummary[] }) {
   const [selected, setSelected] = useState(0);
-  const links = useRef<(HTMLAnchorElement | null)[]>([]);
-
-  useArrowCycle((step) => {
-    const next = (selected + step + cities.length) % cities.length;
-    blip("destination");
-    startTransition(() => setSelected(next));
-    links.current[next]?.focus();
-  });
 
   return (
     <ul aria-label="Cities" className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -35,9 +25,6 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
           >
             <NavLink
               href={`/food/${city.slug}`}
-              ref={(el) => {
-                links.current[i] = el;
-              }}
               onFocus={() => setSelected(i)}
               onMouseEnter={() => setSelected(i)}
               className="group chamfer-tr relative flex h-full min-h-[clamp(150px,15vw,184px)] outline-none transition-[scale] duration-150 ease-snap active:scale-[0.99] flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink"

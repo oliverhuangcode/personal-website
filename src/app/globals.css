@@ -339,6 +339,13 @@ html[data-boot="skip"] .boot-screen {
   animation-timing-function: var(--ease-snap);
 }
 
+/* The food tab bar and its labels hold still across a tab switch while the content beneath
+   crossfades; labels only crossfade their colour as the lit plate passes under them. */
+::view-transition-group(.food-hold) {
+  animation-duration: 0.28s;
+  animation-timing-function: var(--ease-snap);
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
