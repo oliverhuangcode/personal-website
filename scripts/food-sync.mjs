@@ -4,6 +4,9 @@
  *   npm run food:sync                         # FOOD_SHEET_CSV_URL from env, .env.local or .env
  *   npm run food:sync -- --file sheet.csv     # a local export instead
  *
+ * Google Maps links in the coords (or maps) column are resolved to a pin and suburb, and
+ * cached in src/content/maps-links.generated.json.
+ *
  * Bad rows are skipped with a warning. If the sheet can't be fetched, isn't CSV, or has no
  * valid rows, nothing is written and it exits non-zero — the committed JSON stays the last
  * good copy, so a broken sheet can never break the site.
@@ -12,6 +15,7 @@ import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 import { loadEnvLocal } from "./lib/env.mjs";
 import { loadTs } from "./lib/load-ts.mjs";
+import { resolveMapsLinks } from "./lib/maps-links.mjs";
 
 const OUT = "src/content/food.generated.json";
 
@@ -42,16 +46,20 @@ async function readSheet() {
   return text;
 }
 
-const { parseSheet } = await loadTs("src/lib/food-sheet.ts");
+const sheet = await loadTs("src/lib/food-sheet.ts");
 const csv = await readSheet();
+
+// Maps links are looked up once and cached; a lookup that fails only costs that spot its pin.
+const maps = await resolveMapsLinks(sheet.collectMapsLinks(csv), sheet);
 
 let result;
 try {
-  result = parseSheet(csv);
+  result = sheet.parseSheet(csv, maps.places);
 } catch (e) {
   fail(e.message);
 }
-const { restaurants, warnings } = result;
+const { restaurants } = result;
+const warnings = [...maps.warnings, ...result.warnings];
 
 for (const w of warnings) console.warn(`warning: ${w}`);
 if (!restaurants.length) fail("no valid rows");

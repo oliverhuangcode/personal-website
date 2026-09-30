@@ -53,11 +53,30 @@ Only your machine uploads photos, so these keys never go into GitHub.
 | visited | | 2026-03-14 | `YYYY-MM-DD` (or `YYYY-MM`) |
 | review | | Solo booth, broth that coats the spoon. | |
 | dishes | | `Tonkotsu [MUST ORDER]; Kaedama; Spam rice [SKIP]` | separate with `;`; an optional `[TAG]` becomes a chip |
-| coords | | `-37.8136, 144.9631` | long-press the place in Google Maps and copy; used by the map later |
+| coords (or maps) | | `https://maps.app.goo.gl/…` or `-37.8136, 144.9631` | a Google Maps share link, or coordinates. A link also fills a blank **area** |
+| timestamp | | | added by the form; stands in for a blank **visited** |
 
+- **Maps links** are resolved by the sync: a share link is followed to the place's pin, and a link that only names the place is looked up on OpenStreetMap. The suburb comes back too and fills a blank area. Each link is looked up once and cached in `src/content/maps-links.generated.json` (committed). If a lookup fails, that spot shows without a pin and is retried on the next sync.
+- Dates can be `YYYY-MM-DD`, `YYYY-MM`, or day-first `14/03/2026`.
 - Rank is worked out from the score, so row order doesn't matter.
 - A row missing its name, city or a valid score is **skipped with a warning**; it doesn't block the rest. Skipped rows are listed on the Action's run page.
 - If the sheet can't be fetched at all, the run fails, GitHub emails you, and nothing on the site changes.
+
+### Logging from your phone (Google Form)
+A form is much faster than editing a spreadsheet on a phone: tap to pick city, cuisine and price, and paste a Maps link instead of coordinates. Setting it up once:
+
+1. In the sheet, open **Extensions → Apps Script**, replace the editor's contents with `docs/food-form.gs`, and check `LOG_TAB` at the top matches your current tab's name.
+2. Choose `createFoodForm` and press **Run**, then allow the permissions it asks for. It:
+   - creates a "Food log" form, with your existing cities and cuisines as choices (plus **Other**);
+   - links the form to this spreadsheet, as a new **Food log** tab;
+   - copies your existing rows into that tab.
+3. Open **Execution log** and copy the form link. On your phone, open it and use **Add to Home Screen**.
+4. **File → Share → Publish to web**: publish the **Food log** tab as CSV, then put the new URL in `.env.local` and in the `FOOD_SHEET_CSV_URL` GitHub secret. You can unpublish the old tab.
+
+From then on:
+- Each submission is a new row, and the Timestamp is used as the visit date unless you set one.
+- To fix a typo or add dishes later, edit the row in the **Food log** tab directly.
+- Anyone with the form link can submit, so keep it to yourself. If junk appears, delete the row, and it disappears from the site on the next sync.
 
 ### Keeping the sheet tidy
 Filters and city pages group by **exact text** (case is ignored), so `Ramen` and `Ramen bar` become two chips. In Google Sheets, select a column and use **Data → Data validation → Dropdown** to make these pick-lists:
@@ -65,7 +84,7 @@ Filters and city pages group by **exact text** (case is ignored), so `Ramen` and
 | column | dropdown values |
 |---|---|
 | city | the cities you've eaten in, spelled one way (`Melbourne`, not `Melb`) |
-| price | `$ (<$20)`, `$$ ($20-40)`, `$$$ ($40-80)`, `$$$$ ($80+)` per person. Only the leading `$` run is read, so the label is just a reminder; plain `$$` works too |
+| price | `$ (<$20)`, `$$ ($20-50)`, `$$$ ($50-100)`, `$$$$ ($100+)` per person. Only the leading `$` run is read, so the label is just a reminder; plain `$$` works too |
 | cuisine | a short fixed list, e.g. `Japanese`, `Ramen`, `Sushi`, `Korean`, `Chinese`, `Dumplings`, `Thai`, `Vietnamese`, `Indian`, `Italian`, `Pizza`, `Mexican`, `Middle Eastern`, `Burgers`, `BBQ`, `Seafood`, `Cafe`, `Bakery`, `Dessert`, `Modern Australian`, `Bar` |
 
 Add a cuisine the first time you need it, but reuse the existing one when it's close enough. Around 15–25 cuisines keeps the filter chips useful.
