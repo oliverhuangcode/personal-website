@@ -55,8 +55,8 @@ export default function FoodPage() {
                 className="sweep grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-x-3 bg-panel-glass px-4 py-2.5 text-ink sm:grid-cols-[34px_minmax(0,1fr)_110px_minmax(80px,160px)_84px_40px]"
               >
                 <span className={`font-mono text-[11px] ${i < 3 ? "text-score" : "text-ink-muted"}`}>#{pad2(i + 1)}</span>
-                <span className="truncate font-display text-[22px] leading-none tracking-[0.05em]">{r.name}</span>
-                <span className="hidden truncate font-mono text-[10px] tracking-[0.12em] opacity-70 sm:block">{r.city}</span>
+                <span className="font-display text-[22px] leading-[1.05] tracking-[0.05em] break-words">{r.name}</span>
+                <span className="hidden font-mono text-[10px] tracking-[0.12em] break-words opacity-70 sm:block">{r.city}</span>
                 <span aria-hidden className="hidden h-1.5 bg-chip sm:block">
                   <span
                     className="block h-full origin-left animate-fill bg-score"

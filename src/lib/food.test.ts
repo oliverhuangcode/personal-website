@@ -10,7 +10,6 @@ const r = (name: string, score: number, extra: Partial<Restaurant> = {}): Restau
   score,
   city: "MELBOURNE",
   citySlug: "melbourne",
-  country: "AUSTRALIA",
   cuisine: "",
   visited: "",
   review: "",

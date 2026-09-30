@@ -23,7 +23,7 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
   });
 
   return (
-    <ul aria-label="Cities" className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] gap-3">
+    <ul aria-label="Cities" className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {cities.map((city, i) => {
         const active = i === selected;
         const top = city.restaurants[0];
@@ -36,43 +36,40 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
               }}
               onFocus={() => setSelected(i)}
               onMouseEnter={() => setSelected(i)}
-              className="group chamfer-tr relative block aspect-[16/8] overflow-hidden bg-panel text-ink hover:text-ink"
+              className="group chamfer-tr relative flex h-full min-h-[clamp(150px,15vw,184px)] flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink"
             >
-              <MediaFrame
-                photo={city.cover}
-                thumb
-                zoom
-                sizes="(min-width: 1100px) 420px, 100vw"
-                className="absolute inset-0 bg-[repeating-linear-gradient(135deg,var(--color-panel)_0_10px,var(--color-panel-raised)_10px_11px)]"
-                imageClassName="brightness-[0.55] saturate-[0.85]"
-              />
-              <div
-                aria-hidden
-                className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_0%,transparent_65%)]"
-              />
-              <div className="absolute inset-x-4 top-3 flex justify-between gap-3 font-mono text-[10px] tracking-[0.16em] text-ink-muted">
-                <span>
-                  {pad2(i + 1)} · {city.country}
-                </span>
+              {/* The photo layer sits behind the text; its own wrapper keeps MediaFrame's `relative` from taking part in the layout. */}
+              <div aria-hidden className="absolute inset-0">
+                <MediaFrame
+                  photo={city.cover}
+                  thumb
+                  zoom
+                  sizes="(min-width: 768px) 620px, 100vw"
+                  className="h-full bg-[repeating-linear-gradient(135deg,var(--color-panel)_0_10px,var(--color-panel-raised)_10px_11px)]"
+                  imageClassName="brightness-[0.55] saturate-[0.85]"
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_0%,transparent_75%)]" />
+              </div>
+              <div className="relative flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[10px] tracking-[0.16em] text-ink-muted">
+                <span>{pad2(i + 1)}</span>
                 {city.coords && <span>{formatCoords(city.coords)}</span>}
               </div>
-              <div className="absolute inset-x-4 bottom-4 flex items-end justify-between gap-3">
-                <div className="flex min-w-0 flex-col gap-1.5">
-                  <span className="truncate font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] text-title">
-                    {city.name}
-                  </span>
-                  <span className="font-mono text-[11px] tracking-[0.14em] text-ink-dim">
+              <div className="relative flex flex-col gap-2">
+                <span className="font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title">
+                  {city.name}
+                </span>
+                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 font-mono text-[11px] tracking-[0.14em]">
+                  <span className="whitespace-nowrap text-ink-dim">
                     {city.count} {city.count === 1 ? "SPOT" : "SPOTS"} · AVG{" "}
                     <span className="text-score">{city.average.toFixed(1)}</span>
                   </span>
+                  {top && (
+                    <span className="min-w-0 text-[10px] tracking-[0.12em] break-words text-ink-muted sm:max-w-[60%] sm:text-right">
+                      #01 <span className="text-ink">{top.name}</span>{" "}
+                      <span className="whitespace-nowrap text-score">{top.score.toFixed(1)}</span>
+                    </span>
+                  )}
                 </div>
-                {top && (
-                  <span className="hidden shrink-0 flex-col items-end gap-0.5 font-mono text-[10px] tracking-[0.12em] text-ink-muted min-[420px]:flex">
-                    <span>#01</span>
-                    <span className="max-w-[140px] truncate text-ink">{top.name}</span>
-                    <span className="text-score">{top.score.toFixed(1)}</span>
-                  </span>
-                )}
               </div>
               {/* The pick's bar glides between cards (see `.marker` in globals.css). */}
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-border-strong/60">

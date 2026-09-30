@@ -224,7 +224,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                   <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-score" : "opacity-70"}`}>
                     #{pad2(n)}
                   </span>
-                  <span className="relative min-w-0 truncate font-display text-[23px] leading-none tracking-[0.05em]">
+                  <span className="relative min-w-0 font-display text-[23px] leading-[1.05] tracking-[0.05em] break-words">
                     {r.name}
                   </span>
                   <span className="relative ml-auto flex shrink-0 items-baseline gap-3 font-mono">

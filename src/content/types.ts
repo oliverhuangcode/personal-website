@@ -49,7 +49,6 @@ export interface Restaurant {
   name: string;
   city: string;
   citySlug: string;
-  country: string;
   area?: string;
   cuisine: string;
   /** "$" to "$$$$". */

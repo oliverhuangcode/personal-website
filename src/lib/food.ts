@@ -26,7 +26,6 @@ export function tierFor(score: number): string {
 export interface CitySummary {
   slug: string;
   name: string;
-  country: string;
   count: number;
   average: number;
   /** Ranked, best first. */
@@ -51,7 +50,6 @@ export function groupByCity(list: readonly Restaurant[]): CitySummary[] {
       return {
         slug,
         name: ranked[0].city,
-        country: ranked[0].country,
         count: ranked.length,
         average: Math.round(mean(ranked.map((r) => r.score)) * 10) / 10,
         restaurants: ranked,

@@ -28,11 +28,10 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
 export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {
   const city = await find(params);
   const details = [
-    city.country,
     `${city.count} ${city.count === 1 ? "SPOT" : "SPOTS"}`,
     `AVG ${city.average.toFixed(1)}`,
     city.coords && formatCoords(city.coords),
-  ].filter(Boolean);
+  ].filter((d): d is string => Boolean(d));
 
   return (
     <main className="mx-auto flex w-full max-w-[1280px] flex-1 flex-col gap-5 px-gutter py-section">
@@ -45,7 +44,14 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         </NavLink>
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="font-display text-page-title font-normal text-title">{city.name}</h1>
-          <p className="font-mono text-[12px] tracking-[0.2em] text-ink-muted">{details.join(" · ")}</p>
+          <p className="font-mono text-[12px] tracking-[0.2em] text-ink-muted">
+            {details.map((d, i) => (
+              <span key={d} className="whitespace-nowrap">
+                {i > 0 && " · "}
+                {d}
+              </span>
+            ))}
+          </p>
         </div>
       </header>
       <FoodExplorer restaurants={city.restaurants} />

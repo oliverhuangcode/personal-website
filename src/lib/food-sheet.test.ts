@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { parseCoords, parseCsv, parseDishes, parseSheet, slugify } from "./food-sheet";
 
-const HEADER = "name,city,country,area,cuisine,price,visited,score,review,dishes,coords";
+const HEADER = "name,city,area,cuisine,price,visited,score,review,dishes,coords";
 
 describe("slugify", () => {
   it("lowercases, strips accents and joins words with hyphens", () => {
@@ -46,11 +46,11 @@ describe("parseSheet", () => {
   it("builds restaurants and skips bad rows with a warning", () => {
     const csv = [
       HEADER,
-      'Ichiran,Melbourne,Australia,CBD,Ramen,$$,2026-03-14,9.24,"Great, really.","Tonkotsu [MUST ORDER]","-37.8, 144.9"',
-      ",Melbourne,,,,,,8,,,",
-      "Nope,Melbourne,,,,,,eleven,,,",
-      "Ichiran,Melbourne,,,,,,7,,,",
-      "Pie Cart,Auckland,,,,cheap,14/03/2026,7,,,here",
+      'Ichiran,Melbourne,CBD,Ramen,$$,2026-03-14,9.24,"Great, really.","Tonkotsu [MUST ORDER]","-37.8, 144.9"',
+      ",Melbourne,,,,,8,,,",
+      "Nope,Melbourne,,,,,eleven,,,",
+      "Ichiran,Melbourne,,,,,7,,,",
+      "Pie Cart,Auckland,,,cheap,14/03/2026,7,,,here",
     ].join("\n");
     const { restaurants, warnings } = parseSheet(csv);
 

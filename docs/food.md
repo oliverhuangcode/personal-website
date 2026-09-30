@@ -47,7 +47,6 @@ Only your machine uploads photos, so these keys never go into GitHub.
 | name | ✓ | Ichiran | |
 | city | ✓ | Melbourne | groups spots into city pages |
 | score | ✓ | 9.2 | 0–10, one decimal |
-| country | | Australia | |
 | area | | CBD | suburb or neighbourhood |
 | cuisine | | Ramen | becomes a filter chip |
 | price | | $$ | `$` to `$$$$` |

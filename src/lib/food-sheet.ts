@@ -81,7 +81,6 @@ export function parseCoords(cell: string): { lat: number; lon: number } | undefi
 export const COLUMNS = [
   "name",
   "city",
-  "country",
   "area",
   "cuisine",
   "price",
@@ -154,7 +153,6 @@ export function parseSheet(csv: string): SheetResult {
       name: name.toUpperCase(),
       city: city.toUpperCase(),
       citySlug,
-      country: cell(row, "country").toUpperCase(),
       ...(area && { area: area.toUpperCase() }),
       cuisine: cell(row, "cuisine").toUpperCase(),
       ...(/^\${1,4}$/.test(price) && { price }),
