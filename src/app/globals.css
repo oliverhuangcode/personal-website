@@ -197,14 +197,15 @@
   clip-path: polygon(0 0, 100% 0, calc(100% - var(--home-slant)) 100%, var(--home-slant) 100%);
 }
 
-/* Hover fill that sweeps in left to right. Only a background layer, so it survives chamfers. */
+/* Hover fill that sweeps in left to right. Only a background layer, so it survives chamfers.
+   --sweep-duration / --sweep-ease slow it down where a row is wide enough to need it. */
 @utility sweep {
   background-image: linear-gradient(var(--sweep-color, var(--color-accent)) 0 0);
   background-repeat: no-repeat;
   background-size: 0% 100%;
   transition:
-    background-size 0.25s var(--ease-snap),
-    color 0.15s;
+    background-size var(--sweep-duration, 0.25s) var(--sweep-ease, var(--ease-snap)),
+    color calc(var(--sweep-duration, 0.25s) * 0.6);
   &:hover,
   &:focus-visible {
     background-size: 100% 100%;

@@ -47,9 +47,9 @@ export default function FoodPage() {
             <li key={`${r.citySlug}/${r.slug}`} style={stagger(0.2 + i * 0.03)} className="animate-enter">
               <NavLink
                 href={`/food/${r.citySlug}?r=${r.slug}`}
-                className="group sweep grid grid-cols-[34px_minmax(0,1fr)_auto] items-center gap-x-3 bg-panel-glass px-4 py-2.5 text-ink sm:grid-cols-[34px_minmax(0,1fr)_120px_minmax(80px,200px)_40px]"
+                className="group sweep grid grid-cols-[34px_minmax(0,1fr)_auto] [--sweep-duration:0.6s] [--sweep-ease:cubic-bezier(0.33,1,0.68,1)] items-center gap-x-3 bg-panel-glass px-4 py-2.5 text-ink sm:grid-cols-[34px_minmax(0,1fr)_120px_minmax(80px,200px)_40px]"
               >
-                <span className={`font-mono text-[11px] ${i < 3 ? "text-accent group-hover:text-bg group-focus-visible:text-bg" : "text-ink-muted group-hover:text-bg group-focus-visible:text-bg"}`}>#{pad2(i + 1)}</span>
+                <span className={`font-mono text-[11px] transition-colors duration-[360ms] ${i < 3 ? "text-accent group-hover:text-bg group-focus-visible:text-bg" : "text-ink-muted group-hover:text-bg group-focus-visible:text-bg"}`}>#{pad2(i + 1)}</span>
                 <span className="flex min-w-0 flex-col gap-1">
                   <span className="font-display text-[22px] leading-[1.05] tracking-[0.05em] break-words">{r.name}</span>
                   {/* Narrow screens drop the city column, so the city rides under the name. */}
@@ -57,9 +57,9 @@ export default function FoodPage() {
                 </span>
                 <span className="hidden font-mono text-[11px] tracking-[0.12em] break-words opacity-75 sm:block">{r.city}</span>
                 {/* On the purple hover sweep the meter inverts so it stays readable. */}
-                <span aria-hidden className="hidden h-1.5 bg-chip transition-colors group-hover:bg-bg/25 group-focus-visible:bg-bg/25 sm:block">
+                <span aria-hidden className="hidden h-1.5 bg-chip transition-colors duration-[360ms] group-hover:bg-bg/25 group-focus-visible:bg-bg/25 sm:block">
                   <span
-                    className="block h-full origin-left animate-meter bg-accent transition-colors group-hover:bg-bg group-focus-visible:bg-bg"
+                    className="block h-full origin-left animate-meter bg-accent transition-colors duration-[360ms] group-hover:bg-bg group-focus-visible:bg-bg"
                     style={{ width: `${meterPercent(r.score)}%`, ...stagger(0.3 + i * 0.06) }}
                   />
                 </span>
