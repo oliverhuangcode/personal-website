@@ -26,14 +26,8 @@ Google Sheet ──(daily Action / npm run food:sync)──▶ food.generated.js
    - Permissions: **Object Read & Write**
    - Specify bucket: **oh-media** only
    - Create it, then copy the **Access Key ID** and the **Secret Access Key** (the secret is only shown once). Also copy your **Account ID**, which is on the R2 overview page.
-6. Create `.env.local` in the repo root. It's already gitignored.
-   ```
-   R2_ACCOUNT_ID=...
-   R2_ACCESS_KEY_ID=...
-   R2_SECRET_ACCESS_KEY=...
-   R2_BUCKET=oh-media
-   ```
-7. Set `MEDIA_BASE` in `src/content/site.ts` to `https://media.<your-domain>`.
+6. Run `cp .env.example .env.local` and fill in the R2 values. `.env.local` is gitignored.
+7. `MEDIA_BASE` in `src/content/site.ts` is already `https://media.olivrhuang.com`.
 8. Run `npm run photos -- --check`. It should print `R2 OK`.
 
 Only your machine uploads photos, so these keys never go into GitHub.
@@ -41,7 +35,7 @@ Only your machine uploads photos, so these keys never go into GitHub.
 ### 2. The Google Sheet
 1. Create a Google Sheet, then use **File → Import → Upload** to import `docs/food-sheet-template.csv` ("Replace current sheet"). That gives you the columns. Delete the placeholder rows once you've added real ones.
 2. Go to **File → Share → Publish to web**. Choose the tab with your log and **Comma-separated values (.csv)**, then **Publish**. Copy the URL.
-3. Put the URL in `.env.local` as `FOOD_SHEET_CSV_URL=...`, and run `npm run food:sync` to test it.
+3. Put the URL in `.env.local` as `FOOD_SHEET_CSV_URL`, and run `npm run food:sync` to test it.
 4. On GitHub, go to the repo's **Settings → Secrets and variables → Actions → New repository secret**. Name it `FOOD_SHEET_CSV_URL` and paste the same URL.
 5. In **Actions → Food sync → Run workflow**, run it once by hand to check it works. After that it runs daily.
 
@@ -77,6 +71,37 @@ Only your machine uploads photos, so these keys never go into GitHub.
 - A row missing its name, city or a valid score is **skipped with a warning**; it doesn't block the rest. Skipped rows are listed on the Action's run page.
 - If the sheet can't be fetched at all, the run fails, GitHub emails you, and nothing on the site changes.
 
+### Keeping the sheet tidy
+Filters and city pages group by **exact text** (case is ignored), so `Ramen` and `Ramen bar` become two chips. In Google Sheets, select a column and use **Data → Data validation → Dropdown** to make these pick-lists:
+
+| column | dropdown values |
+|---|---|
+| city | the cities you've eaten in, spelled one way (`Melbourne`, not `Melb`) |
+| price | `$`, `$$`, `$$$`, `$$$$` (about under $20, $20–40, $40–80, and $80+ per person) |
+| cuisine | a short fixed list, e.g. `Japanese`, `Ramen`, `Sushi`, `Korean`, `Chinese`, `Dumplings`, `Thai`, `Vietnamese`, `Indian`, `Italian`, `Pizza`, `Mexican`, `Middle Eastern`, `Burgers`, `BBQ`, `Seafood`, `Cafe`, `Bakery`, `Dessert`, `Modern Australian`, `Bar` |
+
+Add a cuisine the first time you need it, but reuse the existing one when it's close enough. Around 15–25 cuisines keeps the filter chips useful.
+
+**Dish tags:** keep to a few so they mean something. Suggested:
+- `MUST ORDER`
+- `SIGNATURE`
+- `SKIP`
+- `SHARE`
+- `SPICY`
+
+Write one in square brackets after the dish, e.g. `Tonkotsu [MUST ORDER]`.
+
+**Scores:** a rough scale keeps them comparable across years:
+
+| score | meaning |
+|---|---|
+| 9.5+ | one of the best meals you've had; you'd plan a trip around it |
+| 9 | would go back often, top of its city |
+| 8 | very good, happily recommend |
+| 7 | good, glad you went |
+| 6 | fine, wouldn't seek out |
+| below 6 | not worth it |
+
 ---
 
 ## Adding photos
@@ -102,3 +127,17 @@ Only your machine uploads photos, so these keys never go into GitHub.
 - `npm run photos -- --dry-run` converts into `.photo-inbox/preview/` without uploading, so you can check the output first.
 - Re-uploading a photo with the same name replaces it; the new file gets a new URL, so browsers never show the old one.
 - If a photo's name doesn't match any dish in the sheet, it still uploads, but you get a warning so you can fix the typo.
+
+---
+
+## Deploying (Vercel, for now)
+The site is a static export, so any static host works; moving to the Oracle server later only changes where `out/` is served from.
+
+1. At vercel.com, sign in with GitHub, choose **Add New → Project**, and import `personal-website`. The defaults are right: Next.js, with `npm run build`. No environment variables are needed, since the site only reads the committed JSON.
+2. In **Project → Settings → Domains**, add `olivrhuang.com` and `www.olivrhuang.com`, with one redirecting to the other.
+3. In Cloudflare DNS, add the records Vercel shows and set each to **DNS only (grey cloud)**, not proxied:
+   - `www` → CNAME `cname.vercel-dns.com`
+   - `@` → A `76.76.21.21`
+
+   Leave the `media` record that R2 created as it is (proxied).
+4. Every push to main now deploys, including the daily food-sync commit.
