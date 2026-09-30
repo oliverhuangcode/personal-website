@@ -5,11 +5,6 @@ export function rankRestaurants(list: readonly Restaurant[]): Restaurant[] {
   return [...list].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-/** Most recent visit first; undated visits last, then by rank. */
-export function byRecent(list: readonly Restaurant[]): Restaurant[] {
-  return rankRestaurants(list).sort((a, b) => (b.visited || "").localeCompare(a.visited || ""));
-}
-
 const TIERS = [
   [9.5, "RADIANT"],
   [9, "IMMORTAL"],

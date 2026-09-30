@@ -4,7 +4,7 @@ import { startTransition, useEffect, useMemo, useRef, useState, ViewTransition }
 
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import type { Restaurant } from "@/content/types";
-import { byRecent, cuisines, formatVisited, tierFor } from "@/lib/food";
+import { cuisines, formatVisited, tierFor } from "@/lib/food";
 import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
@@ -14,8 +14,8 @@ const pagerButton = "px-2.5 py-1 hover:text-ink";
 const chip = "px-[11px] py-[5px]";
 /** Above this many spots the roster gets a search field. */
 const SEARCH_FROM = 15;
-
-type Sort = "RANK" | "RECENT";
+/** Rows rendered at once; the rest load in steps of this size. Search and filters cover every spot. */
+const PAGE = 25;
 
 /** The active fill glides to a new pick (see `.marker` in globals.css). */
 function Highlight({ name }: { name: string }) {
@@ -74,11 +74,11 @@ function Segment<T extends string>({
 
 /**
  * One city's scoreboard, dish carousel and review. `restaurants` arrive ranked, best first;
- * a spot's rank stays its city rank whatever the sort or filter.
+ * a spot's rank stays its city rank whatever the filter.
  */
 export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
-  const [sort, setSort] = useState<Sort>("RANK");
-  const [cuisine, setCuisine] = useState<string>();
+  const [cuisine, setCuisine] = useState("");
+  const [limit, setLimit] = useState(PAGE);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(restaurants[0]?.slug);
   const [dishIndex, setDishIndex] = useState<Record<string, number>>({});
@@ -89,17 +89,23 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
 
   const visible = useMemo(() => {
     const q = query.trim().toUpperCase();
-    const list = sort === "RANK" ? restaurants : byRecent(restaurants);
-    return list.filter(
+    return restaurants.filter(
       (r) =>
         (!cuisine || r.cuisine === cuisine) &&
         (!q || [r.name, r.cuisine, r.area ?? ""].some((field) => field.includes(q))),
     );
-  }, [restaurants, sort, cuisine, query]);
+  }, [restaurants, cuisine, query]);
 
   // A filter can hide the pick; fall back to the top visible spot rather than showing nothing.
   const place = visible.find((r) => r.slug === selected) ?? visible[0];
   const position = place ? visible.indexOf(place) : -1;
+  // Stepping or deep-linking past the loaded rows loads down to the pick.
+  const shown = visible.slice(0, Math.max(limit, position + 1));
+  const kindCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const r of restaurants) counts.set(r.cuisine, (counts.get(r.cuisine) ?? 0) + 1);
+    return counts;
+  }, [restaurants]);
 
   // Deep links from the global top 10 land on their spot: /food/<city>?r=<slug>.
   useEffect(() => {
@@ -149,11 +155,34 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
   return (
     <div className="flex flex-wrap items-start justify-center gap-grid">
       <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
-        <div className="flex gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
-          <div className="flex-[2]">
-            <Segment label="Sort" options={["RANK", "RECENT"] as const} value={sort} onChange={setSort} marker="food-sort" />
-          </div>
-          <div className="flex-[2]">
+        <div className="flex flex-wrap gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
+          {kinds.length > 1 && (
+            <label className="relative flex min-w-[180px] flex-[3] items-center bg-panel-raised">
+              <span className="sr-only">Cuisine</span>
+              <select
+                value={cuisine}
+                onChange={(e) => {
+                  blip("tab");
+                  setLimit(PAGE);
+                  startTransition(() => setCuisine(e.target.value));
+                }}
+                className={`w-full cursor-pointer appearance-none bg-transparent py-2.5 pr-9 pl-3 tracking-[0.12em] outline-none focus-visible:outline-2 focus-visible:outline-accent ${
+                  cuisine ? "text-accent" : "text-ink"
+                }`}
+              >
+                <option value="">ALL CUISINES ({restaurants.length})</option>
+                {kinds.map((k) => (
+                  <option key={k} value={k}>
+                    {k} ({kindCounts.get(k)})
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden className="pointer-events-none absolute right-3 text-ink-muted">
+                ▾
+              </span>
+            </label>
+          )}
+          <div className="min-w-[160px] flex-[2]">
             <Segment
               label="View"
               options={["LIST", "MAP"] as const}
@@ -169,37 +198,14 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setLimit(PAGE);
+              setQuery(e.target.value);
+            }}
             placeholder="SEARCH NAME, CUISINE, AREA"
             aria-label="Search restaurants"
             className="bg-panel-raised px-3 py-2.5 font-mono text-[11px] tracking-[0.12em] text-ink uppercase outline-none placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-accent"
           />
-        )}
-
-        {kinds.length > 1 && (
-          <div
-            role="group"
-            aria-label="Cuisine"
-            className="flex flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]"
-          >
-            {[undefined, ...kinds].map((k) => {
-              const active = k === cuisine;
-              return (
-                <button
-                  key={k ?? "ALL"}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    blip("tab");
-                    startTransition(() => setCuisine(k));
-                  }}
-                  className={`${chip} transition-colors duration-150 ${active ? "bg-accent text-bg" : "bg-chip text-ink hover:bg-border"}`}
-                >
-                  {k ?? "ALL"}
-                </button>
-              );
-            })}
-          </div>
         )}
 
         <ol
@@ -207,7 +213,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
           aria-label="Restaurant rankings"
           className="hairline-group max-h-[min(58dvh,520px)] overflow-y-auto overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
         >
-          {visible.map((r) => {
+          {shown.map((r) => {
             const active = r.slug === place?.slug;
             const n = rank.get(r.slug)!;
             return (
@@ -240,6 +246,20 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
               </li>
             );
           })}
+          {shown.length < visible.length && (
+            <li>
+              <button
+                type="button"
+                onClick={() => {
+                  blip("tab");
+                  setLimit(shown.length + PAGE);
+                }}
+                className="sweep w-full bg-panel-glass px-[15px] py-3 text-left font-mono text-[11px] tracking-[0.14em] text-ink-muted"
+              >
+                SHOW {Math.min(PAGE, visible.length - shown.length)} MORE · {visible.length - shown.length} LEFT
+              </button>
+            </li>
+          )}
           {!visible.length && (
             <li className="bg-panel-glass px-[15px] py-4 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
               NO MATCHES
@@ -306,7 +326,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
             </div>
             <div aria-hidden className="h-2 bg-chip">
               <div
-                className="h-full origin-left animate-fill bg-score"
+                className="h-full origin-left animate-meter bg-score"
                 style={{ width: `${place.score * 10}%`, ...stagger(0.12) }}
               />
             </div>

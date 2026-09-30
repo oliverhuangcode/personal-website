@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Restaurant } from "@/content/types";
 
-import { byRecent, formatCoords, formatVisited, groupByCity, rankRestaurants, tierFor } from "./food";
+import { formatCoords, formatVisited, groupByCity, rankRestaurants, tierFor } from "./food";
 
 const r = (name: string, score: number, extra: Partial<Restaurant> = {}): Restaurant => ({
   slug: name.toLowerCase(),
@@ -27,13 +27,6 @@ describe("rankRestaurants", () => {
     const list = [r("A", 1), r("B", 2)];
     rankRestaurants(list);
     expect(list.map((x) => x.name)).toEqual(["A", "B"]);
-  });
-});
-
-describe("byRecent", () => {
-  it("puts the latest visit first and undated ones last", () => {
-    const list = [r("Old", 9, { visited: "2025-01-01" }), r("None", 10), r("New", 5, { visited: "2026-05-01" })];
-    expect(byRecent(list).map((x) => x.name)).toEqual(["New", "Old", "None"]);
   });
 });
 

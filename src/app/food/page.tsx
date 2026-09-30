@@ -59,8 +59,8 @@ export default function FoodPage() {
                 <span className="hidden font-mono text-[10px] tracking-[0.12em] break-words opacity-70 sm:block">{r.city}</span>
                 <span aria-hidden className="hidden h-1.5 bg-chip sm:block">
                   <span
-                    className="block h-full origin-left animate-fill bg-score"
-                    style={{ width: `${r.score * 10}%`, ...stagger(0.3 + i * 0.03) }}
+                    className="block h-full origin-left animate-meter bg-score"
+                    style={{ width: `${r.score * 10}%`, ...stagger(0.3 + i * 0.06) }}
                   />
                 </span>
                 <span className="hidden font-mono text-[10px] tracking-[0.14em] opacity-70 sm:block">{tierFor(r.score)}</span>

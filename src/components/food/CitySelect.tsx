@@ -26,7 +26,6 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
     <ul aria-label="Cities" className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {cities.map((city, i) => {
         const active = i === selected;
-        const top = city.restaurants[0];
         return (
           <li key={city.slug} style={stagger(i * 0.05)} className="animate-enter">
             <NavLink
@@ -58,18 +57,10 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
                 <span className="font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title">
                   {city.name}
                 </span>
-                <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1.5 font-mono text-[11px] tracking-[0.14em]">
-                  <span className="whitespace-nowrap text-ink-dim">
-                    {city.count} {city.count === 1 ? "SPOT" : "SPOTS"} · AVG{" "}
-                    <span className="text-score">{city.average.toFixed(1)}</span>
-                  </span>
-                  {top && (
-                    <span className="min-w-0 text-[10px] tracking-[0.12em] break-words text-ink-muted sm:max-w-[60%] sm:text-right">
-                      #01 <span className="text-ink">{top.name}</span>{" "}
-                      <span className="whitespace-nowrap text-score">{top.score.toFixed(1)}</span>
-                    </span>
-                  )}
-                </div>
+                <span className="font-mono text-[11px] tracking-[0.14em] text-ink-dim">
+                  {city.count} {city.count === 1 ? "SPOT" : "SPOTS"} · AVG{" "}
+                  <span className="text-score">{city.average.toFixed(1)}</span>
+                </span>
               </div>
               {/* The pick's bar glides between cards (see `.marker` in globals.css). */}
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-border-strong/60">
