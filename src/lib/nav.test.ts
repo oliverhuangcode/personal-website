@@ -14,6 +14,12 @@ describe("nav", () => {
     expect(pageIndex("/nope")).toBe(-1);
   });
 
+  it("counts sub-pages as their section", () => {
+    expect(pageIndex("/food/melbourne")).toBe(4);
+    expect(pageIndex("/food/melbourne/")).toBe(4);
+    expect(pageIndex("/foodie")).toBe(-1);
+  });
+
   it("steps and wraps in both directions", () => {
     expect(stepPage("/", 1).href).toBe("/travel");
     expect(stepPage("/food", 1).href).toBe("/about");
@@ -27,6 +33,9 @@ describe("nav", () => {
     expect(navDirection("/travel/", "/projects")).toBe("nav-back");
     expect(navDirection("/nope", "/about")).toBe("nav-back");
     expect(navDirection("/nope", "/")).toBe("nav-forward");
+    expect(navDirection("/food", "/food/melbourne")).toBe("nav-forward");
+    expect(navDirection("/food/melbourne/", "/food")).toBe("nav-back");
+    expect(navDirection("/food/melbourne", "/travel")).toBe("nav-back");
   });
 
   it("pads numbers", () => {

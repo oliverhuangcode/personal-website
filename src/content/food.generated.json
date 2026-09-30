@@ -1,0 +1,191 @@
+[
+  {
+    "slug": "placeholder-pie-cart",
+    "name": "PLACEHOLDER PIE CART",
+    "city": "AUCKLAND",
+    "citySlug": "auckland",
+    "country": "NEW ZEALAND",
+    "area": "VIADUCT",
+    "cuisine": "PIES",
+    "price": "$",
+    "visited": "2025-12-24",
+    "score": 7.2,
+    "review": "⚠️ Placeholder row. A late-night classic; exactly what you want after midnight.",
+    "dishes": [
+      {
+        "name": "STEAK AND CHEESE",
+        "tag": "MUST ORDER"
+      }
+    ],
+    "coords": {
+      "lat": -36.844,
+      "lon": 174.762
+    }
+  },
+  {
+    "slug": "placeholder-seafood-shack",
+    "name": "PLACEHOLDER SEAFOOD SHACK",
+    "city": "AUCKLAND",
+    "citySlug": "auckland",
+    "country": "NEW ZEALAND",
+    "area": "MISSION BAY",
+    "cuisine": "SEAFOOD",
+    "price": "$$",
+    "visited": "2025-12-28",
+    "score": 8.4,
+    "review": "⚠️ Placeholder row. Fish and chips on the beach; the batter stays crisp.",
+    "dishes": [
+      {
+        "name": "SNAPPER AND CHIPS",
+        "tag": "MUST ORDER"
+      },
+      {
+        "name": "KUMARA CHIPS"
+      }
+    ],
+    "coords": {
+      "lat": -36.848,
+      "lon": 174.833
+    }
+  },
+  {
+    "slug": "placeholder-dumpling-house",
+    "name": "PLACEHOLDER DUMPLING HOUSE",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "country": "AUSTRALIA",
+    "area": "CHINATOWN",
+    "cuisine": "CHINESE",
+    "price": "$",
+    "visited": "2026-06-18",
+    "score": 8.8,
+    "review": "⚠️ Placeholder row. Cheap and fast; the soup dumplings are the reason to go.",
+    "dishes": [
+      {
+        "name": "XIAO LONG BAO",
+        "tag": "MUST ORDER"
+      },
+      {
+        "name": "PAN-FRIED PORK BUNS"
+      },
+      {
+        "name": "FRIED RICE",
+        "tag": "SKIP"
+      }
+    ],
+    "coords": {
+      "lat": -37.8113,
+      "lon": 144.9688
+    }
+  },
+  {
+    "slug": "placeholder-noodle-bar",
+    "name": "PLACEHOLDER NOODLE BAR",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "country": "AUSTRALIA",
+    "area": "CBD",
+    "cuisine": "RAMEN",
+    "price": "$$",
+    "visited": "2026-08-02",
+    "score": 9.3,
+    "review": "⚠️ Placeholder row. Rich broth, fast counter service, queue moves quickly.",
+    "dishes": [
+      {
+        "name": "TONKOTSU",
+        "tag": "MUST ORDER"
+      },
+      {
+        "name": "GYOZA"
+      },
+      {
+        "name": "MATCHA PUDDING"
+      }
+    ],
+    "coords": {
+      "lat": -37.812,
+      "lon": 144.966
+    }
+  },
+  {
+    "slug": "placeholder-taqueria",
+    "name": "PLACEHOLDER TAQUERIA",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "country": "AUSTRALIA",
+    "area": "FITZROY",
+    "cuisine": "MEXICAN",
+    "price": "$$",
+    "visited": "2026-04-05",
+    "score": 7.6,
+    "review": "⚠️ Placeholder row. Good tortillas; salsas could be hotter.",
+    "dishes": [
+      {
+        "name": "AL PASTOR"
+      },
+      {
+        "name": "BIRRIA",
+        "tag": "MUST ORDER"
+      }
+    ],
+    "coords": {
+      "lat": -37.799,
+      "lon": 144.978
+    }
+  },
+  {
+    "slug": "placeholder-wine-bar",
+    "name": "PLACEHOLDER WINE BAR",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "country": "AUSTRALIA",
+    "area": "COLLINGWOOD",
+    "cuisine": "MODERN AUSTRALIAN",
+    "price": "$$$",
+    "visited": "2026-02-14",
+    "score": 8.1,
+    "review": "⚠️ Placeholder row. Small plates and a long list by the glass.",
+    "dishes": [
+      {
+        "name": "BURRATA"
+      },
+      {
+        "name": "LAMB SHOULDER",
+        "tag": "MUST ORDER"
+      }
+    ],
+    "coords": {
+      "lat": -37.803,
+      "lon": 144.986
+    }
+  },
+  {
+    "slug": "placeholder-izakaya",
+    "name": "PLACEHOLDER IZAKAYA",
+    "city": "TOKYO",
+    "citySlug": "tokyo",
+    "country": "JAPAN",
+    "area": "SHINJUKU",
+    "cuisine": "IZAKAYA",
+    "price": "$$",
+    "visited": "2026-10-10",
+    "score": 9.6,
+    "review": "⚠️ Placeholder row. Standing room only; skewers straight off the grill.",
+    "dishes": [
+      {
+        "name": "TSUKUNE",
+        "tag": "MUST ORDER"
+      },
+      {
+        "name": "CHICKEN SKIN"
+      },
+      {
+        "name": "HIGHBALL"
+      }
+    ],
+    "coords": {
+      "lat": 35.6938,
+      "lon": 139.7034
+    }
+  }
+]

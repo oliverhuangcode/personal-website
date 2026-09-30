@@ -13,7 +13,7 @@ const fail = [];
 // 1. No horizontal overflow anywhere
 for (const [w, h] of [[1360, 880], [768, 1024], [390, 844], [320, 720]]) {
   const p = await (await b.newContext({ viewport: { width: w, height: h } })).newPage();
-  for (const path of ["/", "/about", "/projects", "/travel", "/food"]) {
+  for (const path of ["/", "/about", "/projects", "/travel", "/food", "/food/melbourne"]) {
     await p.goto(base + path);
     await p.waitForTimeout(400);
     const { sw, cw } = await p.evaluate(() => ({

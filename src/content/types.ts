@@ -1,7 +1,13 @@
 export interface Photo {
-  /** Path under /public, e.g. "/photos/travel/honolulu-1.jpg". */
+  /** Absolute URL, or a path under /public. */
   src: string;
   alt: string;
+  /** A smaller copy for thumbnails and cards. */
+  thumb?: string;
+  width?: number;
+  height?: number;
+  /** Dominant colour, painted while the photo loads. */
+  color?: string;
 }
 
 export interface Project {
@@ -39,16 +45,23 @@ export interface Dish {
 }
 
 export interface Restaurant {
+  slug: string;
   name: string;
   city: string;
+  citySlug: string;
+  country: string;
+  area?: string;
   cuisine: string;
-  /** When you ate there, e.g. "SEP 2026". */
+  /** "$" to "$$$$". */
+  price?: string;
+  /** ISO date, e.g. "2026-03-14". */
   visited: string;
   /** Out of 10, one decimal place. Rank is derived from this. */
   score: number;
   review: string;
   /** Up to MAX_DISHES. The carousel shows one slide per dish. */
   dishes: Dish[];
+  coords?: { lat: number; lon: number };
 }
 
 export interface TimelineEntry {

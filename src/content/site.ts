@@ -1,5 +1,11 @@
 import type { ExternalLink, Photo, TimelineEntry } from "./types";
 
+/**
+ * Public URL of the Cloudflare R2 bucket that holds every photo (see `scripts/photos.mjs`).
+ * ⚠️ PLACEHOLDER until the bucket's custom domain is connected.
+ */
+export const MEDIA_BASE = "https://media.example.com";
+
 export const site = {
   name: "Oliver Huang",
   title: "SOFTWARE ENGINEER",

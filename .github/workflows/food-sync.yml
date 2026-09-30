@@ -1,0 +1,47 @@
+# Pulls the food log from the published Google Sheet once a day and commits any change.
+# If the sheet is unreachable or broken, the sync exits non-zero before writing, so nothing
+# is committed and the site keeps the last good copy. GitHub emails on a failed run.
+name: Food sync
+
+on:
+  schedule:
+    - cron: "0 17 * * *" # 03:00/04:00 Melbourne
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: food-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Sync sheet
+        run: node scripts/food-sync.mjs
+        env:
+          FOOD_SHEET_CSV_URL: ${{ secrets.FOOD_SHEET_CSV_URL }}
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- src/content/food.generated.json; then
+            echo "No changes."
+            exit 0
+          fi
+          git config user.name "food-sync[bot]"
+          git config user.email "food-sync[bot]@users.noreply.github.com"
+          git add src/content/food.generated.json
+          git commit -m "chore(food): sync from sheet"
+          git push

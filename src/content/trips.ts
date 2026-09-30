@@ -1,8 +1,11 @@
+import { mediaPhotos } from "./media";
 import type { Trip } from "./types";
+
+import { slugify } from "@/lib/slug";
 
 export const MAX_TRIP_PHOTOS = 8;
 
-export const trips: Trip[] = [
+const log: Trip[] = [
   {
     name: "HONOLULU",
     status: "VISITED",
@@ -49,3 +52,9 @@ export const trips: Trip[] = [
     photos: [],
   },
 ];
+
+/** Photos uploaded with `npm run photos` from .photo-inbox/travel/<trip>/ join each trip's list. */
+export const trips: Trip[] = log.map((trip) => ({
+  ...trip,
+  photos: [...trip.photos, ...mediaPhotos(`travel/${slugify(trip.name)}`, (i) => `${trip.name} photo ${i + 1}`)],
+}));

@@ -14,7 +14,7 @@ const { base, close } = await startStaticServer();
 const browser = await chromium.launch();
 let violations = 0;
 
-for (const path of ["/", "/about", "/projects", "/travel", "/food"]) {
+for (const path of ["/", "/about", "/projects", "/travel", "/food", "/food/melbourne"]) {
   const page = await (await browser.newContext({ viewport: { width: 1360, height: 880 } })).newPage();
   await page.goto(base + path);
   // Let the boot overlay finish so the page underneath is what gets scanned.

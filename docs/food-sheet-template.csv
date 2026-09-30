@@ -1,0 +1,8 @@
+name,city,country,area,cuisine,price,visited,score,review,dishes,coords
+Placeholder Noodle Bar,Melbourne,Australia,CBD,Ramen,$$,2026-08-02,9.3,"⚠️ Placeholder row. Rich broth, fast counter service, queue moves quickly.","Tonkotsu [MUST ORDER]; Gyoza; Matcha pudding","-37.8120, 144.9660"
+Placeholder Dumpling House,Melbourne,Australia,Chinatown,Chinese,$,2026-06-18,8.8,⚠️ Placeholder row. Cheap and fast; the soup dumplings are the reason to go.,"Xiao long bao [MUST ORDER]; Pan-fried pork buns; Fried rice [SKIP]","-37.8113, 144.9688"
+Placeholder Taqueria,Melbourne,Australia,Fitzroy,Mexican,$$,2026-04-05,7.6,⚠️ Placeholder row. Good tortillas; salsas could be hotter.,"Al pastor; Birria [MUST ORDER]","-37.7990, 144.9780"
+Placeholder Wine Bar,Melbourne,Australia,Collingwood,Modern Australian,$$$,2026-02-14,8.1,⚠️ Placeholder row. Small plates and a long list by the glass.,"Burrata; Lamb shoulder [MUST ORDER]","-37.8030, 144.9860"
+Placeholder Pie Cart,Auckland,New Zealand,Viaduct,Pies,$,2025-12-24,7.2,⚠️ Placeholder row. A late-night classic; exactly what you want after midnight.,"Steak and cheese [MUST ORDER]","-36.8440, 174.7620"
+Placeholder Seafood Shack,Auckland,New Zealand,Mission Bay,Seafood,$$,2025-12-28,8.4,⚠️ Placeholder row. Fish and chips on the beach; the batter stays crisp.,"Snapper and chips [MUST ORDER]; Kumara chips","-36.8480, 174.8330"
+Placeholder Izakaya,Tokyo,Japan,Shinjuku,Izakaya,$$,2026-10-10,9.6,⚠️ Placeholder row. Standing room only; skewers straight off the grill.,"Tsukune [MUST ORDER]; Chicken skin; Highball","35.6938, 139.7034"
