@@ -82,8 +82,12 @@ function createFoodForm() {
       return from === -1 ? "" : r[from];
     }));
   if (copied.length) {
-    // Plain text keeps "2026-03" and "-37.8, 144.9" exactly as written.
-    responses.getRange(2, 1, copied.length, target.length).setNumberFormat("@").setValues(copied);
+    // Plain text keeps "2026-03" and "-37.8, 144.9" exactly as written; scores stay numbers.
+    ["visited", "maps"].forEach((name) => {
+      const i = target.indexOf(name);
+      if (i !== -1) responses.getRange(2, i + 1, copied.length).setNumberFormat("@");
+    });
+    responses.getRange(2, 1, copied.length, target.length).setValues(copied);
   }
 
   Logger.log(`Form (bookmark this on your phone): ${form.getPublishedUrl()}`);
