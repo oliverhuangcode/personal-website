@@ -72,6 +72,15 @@ describe("parseSheet", () => {
     expect(warnings.join("\n")).toMatch(/duplicate in Melbourne/);
   });
 
+  it("reads the $ run from a dropdown label and rejects anything else", () => {
+    const row = (price: string, i: number) => `Spot ${i},Melbourne,,,"${price}",,8,,,`;
+    const prices = (...values: string[]) => parseSheet([HEADER, ...values.map(row)].join("\n"));
+    const { restaurants, warnings } = prices("$$$ ($40-80)", "$ (<$20)", "$$$$$", "$$cheap");
+    const bySlug = Object.fromEntries(restaurants.map((r) => [r.slug, r.price]));
+    expect(bySlug).toEqual({ "spot-0": "$$$", "spot-1": "$", "spot-2": undefined, "spot-3": undefined });
+    expect(warnings.filter((w) => w.includes("price"))).toHaveLength(2);
+  });
+
   it("refuses a sheet without the required columns", () => {
     expect(() => parseSheet("title,place\nx,y")).toThrow(/"name" column/);
   });

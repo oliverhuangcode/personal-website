@@ -141,8 +141,10 @@ export function parseSheet(csv: string): SheetResult {
     if (visited && !/^\d{4}-\d{2}(-\d{2})?$/.test(visited)) {
       warnings.push(`${line} (${name}): visited "${visited}" ignored, use YYYY-MM-DD`);
     }
-    const price = cell(row, "price");
-    if (price && !/^\${1,4}$/.test(price)) warnings.push(`${line} (${name}): price "${price}" ignored, use $ to $$$$`);
+    // Only the leading $ run counts, so a dropdown label like "$$ ($20-40)" reads as "$$".
+    const priceText = cell(row, "price");
+    const price = priceText.match(/^(\${1,4})(?!\$)(?:\s|\(|$)/)?.[1] ?? "";
+    if (priceText && !price) warnings.push(`${line} (${name}): price "${priceText}" ignored, use $ to $$$$`);
     const coordsText = cell(row, "coords");
     const coords = coordsText ? parseCoords(coordsText) : undefined;
     if (coordsText && !coords) warnings.push(`${line} (${name}): coords "${coordsText}" ignored, use "lat, lon"`);
@@ -155,7 +157,7 @@ export function parseSheet(csv: string): SheetResult {
       citySlug,
       ...(area && { area: area.toUpperCase() }),
       cuisine: cell(row, "cuisine").toUpperCase(),
-      ...(/^\${1,4}$/.test(price) && { price }),
+      ...(price && { price }),
       visited: /^\d{4}-\d{2}(-\d{2})?$/.test(visited) ? visited : "",
       score: Math.round(score * 10) / 10,
       review: cell(row, "review"),

@@ -65,7 +65,7 @@ Filters and city pages group by **exact text** (case is ignored), so `Ramen` and
 | column | dropdown values |
 |---|---|
 | city | the cities you've eaten in, spelled one way (`Melbourne`, not `Melb`) |
-| price | `$`, `$$`, `$$$`, `$$$$` (about under $20, $20–40, $40–80, and $80+ per person) |
+| price | `$ (<$20)`, `$$ ($20-40)`, `$$$ ($40-80)`, `$$$$ ($80+)` per person. Only the leading `$` run is read, so the label is just a reminder; plain `$$` works too |
 | cuisine | a short fixed list, e.g. `Japanese`, `Ramen`, `Sushi`, `Korean`, `Chinese`, `Dumplings`, `Thai`, `Vietnamese`, `Indian`, `Italian`, `Pizza`, `Mexican`, `Middle Eastern`, `Burgers`, `BBQ`, `Seafood`, `Cafe`, `Bakery`, `Dessert`, `Modern Australian`, `Bar` |
 
 Add a cuisine the first time you need it, but reuse the existing one when it's close enough. Around 15–25 cuisines keeps the filter chips useful.
