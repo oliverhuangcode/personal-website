@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useState, ViewTransition } from "react";
+import { startTransition, useState } from "react";
 
+import { Glide } from "@/components/ui/Glide";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Project } from "@/content/types";
 import { useArrowCycle } from "@/lib/keys";
@@ -15,15 +16,6 @@ const TABS = [
 
 const chip = "px-3 py-[7px]";
 const link = "outline-1 -outline-offset-1 outline-border-strong transition-colors duration-150 hover:text-accent hover:outline-accent";
-
-/** The active tab's fill and the roster bar glide to a new pick (see `.marker` in globals.css). */
-function Highlight({ name, className }: { name: string; className: string }) {
-  return (
-    <ViewTransition name={name} share="marker" default="none">
-      <span aria-hidden className={`absolute ${className}`} />
-    </ViewTransition>
-  );
-}
 
 /**
  * Invisible copies of every variant, stacked in one grid cell with the live text,
@@ -87,8 +79,9 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
 
           <div
             role="group"
+            data-glide-root
             aria-label="Project details"
-            className="flex gap-px bg-hairline font-mono text-[11px] font-medium tracking-[0.12em]"
+            className="isolate flex gap-px bg-hairline font-mono text-[11px] font-medium tracking-[0.12em]"
           >
             {TABS.map((t, i) => (
               <button
@@ -104,8 +97,8 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                   i === tab ? "text-bg" : "text-ink"
                 }`}
               >
-                {i === tab && <Highlight name="project-tab" className="inset-0 bg-accent" />}
-                <span className="relative">{t.label}</span>
+                {i === tab && <Glide id="project-tab" className="inset-0 z-10 bg-accent" />}
+                <span className="relative z-20">{t.label}</span>
               </button>
             ))}
           </div>
@@ -151,7 +144,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
       >
         <div className="h-px bg-[linear-gradient(90deg,transparent,#2e2b38_20%,#2e2b38_80%,transparent)]" />
         {/* safe-center keeps the first thumbnail reachable when the row overflows. */}
-        <ul className="flex justify-center-safe gap-2 overflow-x-auto pb-1.5">
+        <ul data-glide-root className="flex justify-center-safe gap-2 overflow-x-auto pb-1.5">
           {projects.map((p, i) => {
             const active = i === selected;
             return (
@@ -172,8 +165,8 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                       active ? "outline-accent" : "outline-border"
                     }`}
                   />
-                  <span className="relative h-[3px] w-full bg-border-strong">
-                    {active && <Highlight name="roster-bar" className="inset-0 bg-accent" />}
+                  <span className={`relative h-[3px] w-full bg-border-strong ${active ? "z-10" : ""}`}>
+                    {active && <Glide id="roster-bar" className="inset-0 bg-accent" />}
                   </span>
                 </button>
               </li>

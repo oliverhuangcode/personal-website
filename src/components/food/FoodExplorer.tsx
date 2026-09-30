@@ -1,8 +1,9 @@
 "use client";
 
-import { startTransition, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { Dropdown } from "@/components/ui/Dropdown";
+import { Glide } from "@/components/ui/Glide";
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import type { Restaurant } from "@/content/types";
 import { cuisines, formatVisited, meterPercent } from "@/lib/food";
@@ -22,15 +23,6 @@ const SEARCH_FROM = 15;
 const PAGE = 25;
 /** Below this width the columns stack, so a picked spot's review sits under the list. */
 const STACKED = "(max-width: 1023px)";
-
-/** The selected row's fill glides to a new pick (see `.marker` in globals.css). */
-function Highlight({ name }: { name: string }) {
-  return (
-    <ViewTransition name={name} share="marker" default="none">
-      <span aria-hidden className="absolute inset-0 bg-accent" />
-    </ViewTransition>
-  );
-}
 
 /**
  * Score bar starting at 5 (see `meterPercent`). It stays mounted across picks, so after
@@ -222,8 +214,9 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
         <ol
           key={cuisine || "all"}
           ref={listRef}
+          data-glide-root
           aria-label="Restaurant rankings"
-          className="hairline-group animate-swap lg:max-h-[min(58dvh,520px)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
+          className="hairline-group isolate animate-swap lg:max-h-[min(58dvh,520px)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
         >
           {shown.map((r, i) => {
             const active = r.slug === place?.slug;
@@ -243,14 +236,14 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                     active ? "text-bg" : "text-ink hover:bg-panel-raised"
                   }`}
                 >
-                  {active && <Highlight name="food-row" />}
-                  <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-accent" : "opacity-75"}`}>
+                  {active && <Glide id="food-row" className="inset-0 z-10 bg-accent" />}
+                  <span className={`relative z-20 font-mono text-[11px] ${!active && n <= 3 ? "text-accent" : "opacity-75"}`}>
                     #{pad2(n)}
                   </span>
-                  <span className="relative min-w-0 font-display text-[23px] leading-[1.05] tracking-[0.05em] break-words">
+                  <span className="relative z-20 min-w-0 font-display text-[23px] leading-[1.05] tracking-[0.05em] break-words">
                     {r.name}
                   </span>
-                  <span className="relative ml-auto w-[30px] shrink-0 text-right font-mono text-[13px] tracking-[0.04em]">
+                  <span className="relative z-20 ml-auto w-[30px] shrink-0 text-right font-mono text-[13px] tracking-[0.04em]">
                     {r.score.toFixed(1)}
                     <span className="sr-only"> out of 10</span>
                   </span>

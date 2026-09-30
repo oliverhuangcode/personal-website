@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useMemo, useState, ViewTransition } from "react";
+import { startTransition, useMemo, useState } from "react";
 
+import { Glide } from "@/components/ui/Glide";
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
@@ -40,7 +41,7 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-grid">
-      <ul aria-label="Destinations" className="hairline-group min-w-0 flex-[1_1_240px]">
+      <ul data-glide-root aria-label="Destinations" className="hairline-group isolate min-w-0 flex-[1_1_240px]">
         {trips.map((t, i) => {
           const active = i === index;
           return (
@@ -53,15 +54,10 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
                   active ? "text-bg" : "text-ink"
                 }`}
               >
-                {/* Glides to the new row on pick (see `.marker` in globals.css). */}
-                {active && (
-                  <ViewTransition name="trip-row" share="marker" default="none">
-                    <span aria-hidden className="absolute inset-0 bg-accent" />
-                  </ViewTransition>
-                )}
-                <span className="relative font-mono text-[11px] opacity-70">{pad3(i + 1)}</span>
-                <span className="relative font-display text-[24px] leading-none tracking-[0.05em]">{t.name}</span>
-                <span className="relative ml-auto font-mono text-[10px] tracking-[0.12em] opacity-70">{t.status}</span>
+                {active && <Glide id="trip-row" className="inset-0 z-10 bg-accent" />}
+                <span className="relative z-20 font-mono text-[11px] opacity-70">{pad3(i + 1)}</span>
+                <span className="relative z-20 font-display text-[24px] leading-none tracking-[0.05em]">{t.name}</span>
+                <span className="relative z-20 ml-auto font-mono text-[10px] tracking-[0.12em] opacity-70">{t.status}</span>
               </button>
             </li>
           );
