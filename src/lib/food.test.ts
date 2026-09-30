@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Restaurant } from "@/content/types";
 
-import { formatCoords, formatVisited, groupByCity, rankRestaurants, tierFor } from "./food";
+import { formatCoords, formatVisited, groupByCity, meterPercent, rankRestaurants, tierFor } from "./food";
 
 const r = (name: string, score: number, extra: Partial<Restaurant> = {}): Restaurant => ({
   slug: name.toLowerCase(),
@@ -44,6 +44,12 @@ describe("tierFor", () => {
       "IRON",
       "IRON",
     ]);
+  });
+});
+
+describe("meterPercent", () => {
+  it("maps 5–10 onto the whole bar and clamps outside it", () => {
+    expect([10, 9, 7.5, 5, 3].map(meterPercent)).toEqual([100, 80, 50, 0, 0]);
   });
 });
 

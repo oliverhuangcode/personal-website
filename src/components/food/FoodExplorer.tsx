@@ -4,20 +4,23 @@ import { startTransition, useEffect, useMemo, useRef, useState, ViewTransition }
 
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import type { Restaurant } from "@/content/types";
-import { cuisines, formatVisited, tierFor } from "@/lib/food";
+import { cuisines, formatVisited, meterPercent, TIERS, tierFor } from "@/lib/food";
 import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
-const pagerButton = "px-2.5 py-1 hover:text-ink";
+const pagerButton = "min-h-9 min-w-9 px-2.5 py-1.5 hover:text-ink";
 const chip = "px-[11px] py-[5px]";
+const label = "font-mono text-[11px] tracking-[0.22em] text-ink-muted";
 /** Above this many spots the roster gets a search field. */
 const SEARCH_FROM = 15;
 /** Rows rendered at once; the rest load in steps of this size. Search and filters cover every spot. */
 const PAGE = 25;
+/** Below this width the columns stack, so a picked spot's review sits under the list. */
+const STACKED = "(max-width: 1023px)";
 
-/** The active fill glides to a new pick (see `.marker` in globals.css). */
+/** The selected row's fill glides to a new pick (see `.marker` in globals.css). */
 function Highlight({ name }: { name: string }) {
   return (
     <ViewTransition name={name} share="marker" default="none">
@@ -26,112 +29,123 @@ function Highlight({ name }: { name: string }) {
   );
 }
 
-function Segment<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-  marker,
-  disabled = [],
-}: {
-  label: string;
-  options: readonly T[];
-  value: T;
-  onChange: (value: T) => void;
-  marker: string;
-  disabled?: readonly T[];
-}) {
+/**
+ * Score bar starting at 5 (see `meterPercent`), with ticks at the tier lines. It stays mounted
+ * across picks, so after its first fill it travels from one score to the next.
+ */
+function Meter({ score }: { score: number }) {
   return (
-    <div role="group" aria-label={label} className="flex gap-px bg-hairline">
-      {options.map((option) => {
-        const active = option === value;
-        const off = disabled.includes(option);
-        return (
-          <button
-            key={option}
-            type="button"
-            aria-pressed={active}
-            disabled={off}
-            onClick={() => {
-              blip("tab");
-              startTransition(() => onChange(option));
-            }}
-            className={`relative flex-1 bg-panel-raised px-3 py-2.5 text-center transition-colors duration-150 disabled:cursor-not-allowed disabled:text-ink-muted/60 ${
-              active ? "text-bg" : "text-ink"
-            }`}
-          >
-            {active && <Highlight name={marker} />}
-            <span className="relative">
-              {option}
-              {off && <span className="ml-1.5 text-[9px] opacity-80">SOON</span>}
-            </span>
-          </button>
-        );
-      })}
+    <div aria-hidden className="relative h-2 bg-chip">
+      <div
+        className="h-full origin-left animate-meter bg-score transition-[width] duration-[1400ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
+        style={{ width: `${meterPercent(score)}%`, ...stagger(0.12) }}
+      />
+      {TIERS.slice(0, -1).map(([min]) => (
+        <span key={min} className="absolute inset-y-0 w-px bg-bg" style={{ left: `${meterPercent(min)}%` }} />
+      ))}
     </div>
   );
 }
 
+function readParams() {
+  const params = new URLSearchParams(window.location.search);
+  return { r: params.get("r") ?? "", cuisine: params.get("cuisine") ?? "", q: params.get("q") ?? "" };
+}
+
 /**
- * One city's scoreboard, dish carousel and review. `restaurants` arrive ranked, best first;
- * a spot's rank stays its city rank whatever the filter.
+ * One city's scoreboard, dishes and review. `restaurants` arrive ranked, best first;
+ * a spot's rank stays its city rank whatever the filter. The filter, search and pick
+ * live in the URL, so a view can be shared and survives Back.
  */
 export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
   const [cuisine, setCuisine] = useState("");
-  const [limit, setLimit] = useState(PAGE);
   const [query, setQuery] = useState("");
+  const [limit, setLimit] = useState(PAGE);
   const [selected, setSelected] = useState(restaurants[0]?.slug);
   const [dishIndex, setDishIndex] = useState<Record<string, number>>({});
   const listRef = useRef<HTMLOListElement>(null);
+  const reviewRef = useRef<HTMLElement>(null);
+  const revealReview = useRef(false);
 
   const rank = useMemo(() => new Map(restaurants.map((r, i) => [r.slug, i + 1])), [restaurants]);
   const kinds = useMemo(() => cuisines(restaurants), [restaurants]);
-
-  const visible = useMemo(() => {
-    const q = query.trim().toUpperCase();
-    return restaurants.filter(
-      (r) =>
-        (!cuisine || r.cuisine === cuisine) &&
-        (!q || [r.name, r.cuisine, r.area ?? ""].some((field) => field.includes(q))),
-    );
-  }, [restaurants, cuisine, query]);
-
-  // A filter can hide the pick; fall back to the top visible spot rather than showing nothing.
-  const place = visible.find((r) => r.slug === selected) ?? visible[0];
-  const position = place ? visible.indexOf(place) : -1;
-  // Stepping or deep-linking past the loaded rows loads down to the pick.
-  const shown = visible.slice(0, Math.max(limit, position + 1));
   const kindCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const r of restaurants) counts.set(r.cuisine, (counts.get(r.cuisine) ?? 0) + 1);
     return counts;
   }, [restaurants]);
 
-  // Deep links from the global top 10 land on their spot: /food/<city>?r=<slug>.
-  useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("r");
-    if (slug && rank.has(slug)) startTransition(() => setSelected(slug));
-  }, [rank]);
+  const visible = useMemo(() => {
+    const q = query.trim().toUpperCase();
+    // "12" or "#12" jumps straight to that rank.
+    const asRank = /^#?\d+$/.test(q) ? Number(q.replace("#", "")) : undefined;
+    return restaurants.filter(
+      (r) =>
+        (!cuisine || r.cuisine === cuisine) &&
+        (!q || rank.get(r.slug) === asRank || [r.name, r.cuisine, r.area ?? ""].some((field) => field.includes(q))),
+    );
+  }, [restaurants, cuisine, query, rank]);
 
-  // Keep the pick in view inside the scrolling roster without scrolling the page.
+  // A filter can hide the pick; fall back to the top visible spot rather than showing nothing.
+  const place = visible.find((r) => r.slug === selected) ?? visible[0];
+  const position = place ? visible.indexOf(place) : -1;
+  // Stepping or deep-linking past the loaded rows loads down to the pick.
+  const shown = visible.slice(0, Math.max(limit, position + 1));
+  const filtered = Boolean(cuisine || query);
+
+  // Restore a shared view: /food/<city>?r=<slug>&cuisine=<CUISINE>&q=<text>.
+  useEffect(() => {
+    const { r, cuisine: c, q } = readParams();
+    startTransition(() => {
+      if (r && rank.has(r)) setSelected(r);
+      if (c && kinds.includes(c)) setCuisine(c);
+      if (q) setQuery(q);
+    });
+  }, [rank, kinds]);
+
+  // Mirror the view into the URL without adding history entries.
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (place && place.slug !== visible[0]?.slug) params.set("r", place.slug);
+    if (cuisine) params.set("cuisine", cuisine);
+    if (query) params.set("q", query);
+    const qs = params.toString();
+    const next = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) window.history.replaceState(null, "", next);
+  }, [place, visible, cuisine, query]);
+
+  // Keep the pick in view inside the scrolling roster (wide screens) without scrolling the page.
   useEffect(() => {
     const list = listRef.current;
-    const row = list?.querySelector<HTMLElement>('[aria-pressed="true"]');
-    if (!list || !row) return;
+    const row = list?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!list || !row || list.scrollHeight <= list.clientHeight) return;
     const l = list.getBoundingClientRect();
     const r = row.getBoundingClientRect();
     if (r.top < l.top) list.scrollTop -= l.top - r.top;
     else if (r.bottom > l.bottom) list.scrollTop += r.bottom - l.bottom;
   }, [place?.slug]);
 
+  // Stacked, the review is below the list: bring it up so a tap visibly did something. This waits
+  // for the pick to render, because a scroll started mid view-transition gets cut short.
+  useEffect(() => {
+    if (!revealReview.current) return;
+    revealReview.current = false;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const frame = requestAnimationFrame(() =>
+      reviewRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto", block: "start" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [place?.slug]);
+
   const select = (slug: string) => {
     blip("project");
+    revealReview.current = window.matchMedia(STACKED).matches;
     startTransition(() => setSelected(slug));
   };
   // Steps from the latest pick, not this render's: presses during a transition all count.
   const cycle = (step: number) => {
     const n = visible.length;
-    if (!n) return;
+    if (n < 2) return;
     blip("project");
     startTransition(() =>
       setSelected((prev) => {
@@ -142,22 +156,31 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
   };
   useArrowCycle(cycle);
 
+  const clearFilters = () => {
+    blip("tab");
+    setLimit(PAGE);
+    startTransition(() => {
+      setCuisine("");
+      setQuery("");
+    });
+  };
+
   const dishes = place?.dishes ?? [];
-  const current = place ? Math.min(dishIndex[place.slug] ?? 0, Math.max(dishes.length - 1, 0)) : 0;
-  const dish = dishes[current];
-  const showDish = (i: number) => {
+  const pictured = dishes.filter((d) => d.photo);
+  const current = place ? Math.min(dishIndex[place.slug] ?? 0, Math.max(pictured.length - 1, 0)) : 0;
+  const showPhoto = (i: number) => {
     if (!place) return;
     blip("photo");
     setDishIndex((prev) => ({ ...prev, [place.slug]: i }));
   };
-  const placeRank = place ? pad2(rank.get(place.slug)!) : "";
+  const placeRank = place ? rank.get(place.slug)! : 0;
 
   return (
     <div className="flex flex-wrap items-start justify-center gap-grid">
       <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
-        <div className="flex flex-wrap gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
+        <div className="flex flex-wrap items-stretch gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
           {kinds.length > 1 && (
-            <label className="relative flex min-w-[180px] flex-[3] items-center bg-panel-raised">
+            <label className="relative flex min-w-[180px] flex-1 items-center bg-panel-raised">
               <span className="sr-only">Cuisine</span>
               <select
                 value={cuisine}
@@ -182,16 +205,8 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
               </span>
             </label>
           )}
-          <div className="min-w-[160px] flex-[2]">
-            <Segment
-              label="View"
-              options={["LIST", "MAP"] as const}
-              value="LIST"
-              onChange={() => {}}
-              marker="food-view"
-              disabled={["MAP"]}
-            />
-          </div>
+          {/* Not a control yet: a status tag until the map exists. */}
+          <span className="ml-auto flex items-center border border-border px-3 py-2.5 text-ink-muted">MAP · SOON</span>
         </div>
 
         {restaurants.length > SEARCH_FROM && (
@@ -202,8 +217,8 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
               setLimit(PAGE);
               setQuery(e.target.value);
             }}
-            placeholder="SEARCH NAME, CUISINE, AREA"
-            aria-label="Search restaurants"
+            placeholder="SEARCH NAME, CUISINE, AREA OR #RANK"
+            aria-label="Search restaurants by name, cuisine, area or rank"
             className="bg-panel-raised px-3 py-2.5 font-mono text-[11px] tracking-[0.12em] text-ink uppercase outline-none placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-accent"
           />
         )}
@@ -211,7 +226,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
         <ol
           ref={listRef}
           aria-label="Restaurant rankings"
-          className="hairline-group max-h-[min(58dvh,520px)] overflow-y-auto overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
+          className="hairline-group lg:max-h-[min(58dvh,520px)] lg:overflow-y-auto lg:overscroll-contain [scrollbar-color:var(--color-border-strong)_transparent] [scrollbar-width:thin]"
         >
           {shown.map((r) => {
             const active = r.slug === place?.slug;
@@ -220,21 +235,21 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
               <li key={r.slug}>
                 <button
                   type="button"
-                  aria-pressed={active}
+                  aria-current={active}
                   onClick={() => select(r.slug)}
                   className={`relative flex w-full items-center gap-3 bg-panel-glass px-[15px] py-[12px] text-left transition-colors duration-150 ${
-                    active ? "text-bg" : "text-ink"
+                    active ? "text-bg" : "text-ink hover:bg-panel-raised"
                   }`}
                 >
                   {active && <Highlight name="food-row" />}
-                  <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-score" : "opacity-70"}`}>
+                  <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-score" : "opacity-75"}`}>
                     #{pad2(n)}
                   </span>
                   <span className="relative min-w-0 font-display text-[23px] leading-[1.05] tracking-[0.05em] break-words">
                     {r.name}
                   </span>
                   <span className="relative ml-auto flex shrink-0 items-baseline gap-3 font-mono">
-                    <span className="hidden text-[9px] tracking-[0.14em] opacity-70 min-[380px]:inline">
+                    <span className="hidden text-[11px] tracking-[0.12em] opacity-75 min-[400px]:inline">
                       {tierFor(r.score)}
                     </span>
                     <span className="w-[30px] text-right text-[13px] tracking-[0.04em]">
@@ -261,95 +276,138 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
             </li>
           )}
           {!visible.length && (
-            <li className="bg-panel-glass px-[15px] py-4 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
+            <li className="flex items-center justify-between gap-3 bg-panel-glass px-[15px] py-3 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
               NO MATCHES
+              <button type="button" onClick={clearFilters} className="px-2 py-1 text-accent hover:text-accent-hover">
+                CLEAR FILTERS
+              </button>
             </li>
           )}
         </ol>
 
-        <div className="flex items-center justify-center gap-2.5 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
-          <button type="button" aria-label="Previous restaurant" onClick={() => cycle(-1)} className={pagerButton}>
-            ◂
-          </button>
-          <span className="text-ink">
-            {pad2(position + 1)} / {pad2(visible.length)}
-          </span>
-          <button type="button" aria-label="Next restaurant" onClick={() => cycle(1)} className={pagerButton}>
-            ▸
-          </button>
-        </div>
-      </div>
-
-      {/* Below three columns, the review sits right under the roster and the dishes follow. */}
-      {place && (
-        <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3 max-[1023px]:order-last">
-          <PhotoCarousel
-            photos={dishes.map((d) => d.photo)}
-            fallbacks={dishes.map((d) => d.name)}
-            index={current}
-            onChange={showDish}
-            label={place.name}
-            revealKey={place.slug}
-          />
-          {dish && (
-            <div
-              key={`dish-${place.slug}-${current}`}
-              className="flex animate-enter flex-wrap items-center justify-center gap-2.5"
-            >
-              <span className="font-display text-[26px] leading-none tracking-[0.05em]">{dish.name}</span>
-              {dish.tag && (
-                <span className={`${chip} bg-accent font-mono text-[10px] font-medium tracking-[0.12em] text-bg`}>
-                  {dish.tag}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* The live region persists to announce; only its content remounts per pick. */}
-      <section aria-live="polite" aria-label={place?.name ?? "No restaurant"} className="flex min-w-0 flex-[1_1_300px] flex-col">
-        {place && (
-          <div key={place.slug} className="flex flex-col gap-3.5">
-            <p className="flex animate-enter justify-between gap-3 font-mono text-[12px] tracking-[0.3em] text-ink">
-              <span>
-                RANK #{placeRank} / {pad2(restaurants.length)}
-              </span>
-              <span className="text-[11px] tracking-[0.2em] text-score">{tierFor(place.score)}</span>
-            </p>
-            <div className="flex animate-enter items-baseline justify-between gap-3" style={stagger(0.04)}>
-              <h2 className="font-display text-trip-name font-normal text-title">{place.name}</h2>
-              <span className="font-mono text-[32px] leading-none text-score">
-                {place.score.toFixed(1)}
-                <span className="sr-only"> out of 10</span>
-              </span>
-            </div>
-            <div aria-hidden className="h-2 bg-chip">
-              <div
-                className="h-full origin-left animate-meter bg-score"
-                style={{ width: `${place.score * 10}%`, ...stagger(0.12) }}
-              />
-            </div>
-            <ul
-              className="flex animate-enter flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]"
-              style={stagger(0.08)}
-            >
-              {[place.area, place.cuisine, place.price, place.visited && formatVisited(place.visited)]
-                .filter(Boolean)
-                .map((c) => (
-                  <li key={c} className={`${chip} bg-chip text-ink`}>
-                    {c}
-                  </li>
-                ))}
-            </ul>
-            {place.review && (
-              <div className="animate-enter border-l-2 border-accent bg-panel-glass p-5" style={stagger(0.12)}>
-                <p className="text-[16px] leading-[1.55] text-pretty text-ink-dim">{place.review}</p>
-              </div>
-            )}
+        {visible.length > 1 && (
+          <div className="flex items-center justify-center gap-1.5 font-mono text-[11px] tracking-[0.14em] text-ink-muted">
+            <button type="button" aria-label="Previous restaurant" onClick={() => cycle(-1)} className={pagerButton}>
+              ◂
+            </button>
+            <span className="text-ink">
+              {pad2(position + 1)} / {pad2(visible.length)}
+              {filtered && <span className="text-ink-muted"> SHOWN</span>}
+            </span>
+            <button type="button" aria-label="Next restaurant" onClick={() => cycle(1)} className={pagerButton}>
+              ▸
+            </button>
           </div>
         )}
+      </div>
+
+      {/* One short announcement per pick, rather than the whole review read out again. */}
+      <p aria-live="polite" className="sr-only">
+        {place ? `Rank ${placeRank}: ${place.name}, ${place.score.toFixed(1)} out of 10, ${tierFor(place.score)}` : "No matches"}
+      </p>
+
+      <section
+        ref={reviewRef}
+        aria-label={place ? `${place.name} review` : "Review"}
+        className="flex min-w-0 flex-[1_1_300px] scroll-mt-[72px] flex-col gap-3.5 lg:order-last"
+      >
+        {place && (
+          <>
+            <div key={`head-${place.slug}`} className="flex flex-col gap-3.5">
+              <p className="flex animate-enter justify-between gap-3 font-mono text-[12px] tracking-[0.3em] text-ink">
+                <span>
+                  RANK #{pad2(placeRank)} / {pad2(restaurants.length)}
+                </span>
+                <span className="text-[11px] tracking-[0.2em] text-score">{tierFor(place.score)}</span>
+              </p>
+              <div className="flex animate-enter items-baseline justify-between gap-3" style={stagger(0.04)}>
+                <h2 className="font-display text-trip-name font-normal text-title">{place.name}</h2>
+                <span className="font-mono text-[32px] leading-none text-score">
+                  {place.score.toFixed(1)}
+                  <span className="sr-only"> out of 10</span>
+                </span>
+              </div>
+            </div>
+            <Meter score={place.score} />
+            <div key={`body-${place.slug}`} className="flex flex-col gap-3.5">
+              <ul
+                className="flex animate-enter flex-wrap gap-1.5 font-mono text-[11px] font-medium tracking-[0.1em]"
+                style={stagger(0.08)}
+              >
+                {[place.area, place.cuisine, place.price, place.visited && formatVisited(place.visited)]
+                  .filter(Boolean)
+                  .map((c) => (
+                    <li key={c} className={`${chip} bg-chip text-ink`}>
+                      {c}
+                    </li>
+                  ))}
+              </ul>
+              {place.review && (
+                <div className="animate-enter border-l-2 border-accent bg-panel-glass p-5" style={stagger(0.12)}>
+                  <p className="text-[16px] leading-[1.55] text-pretty text-ink-dim">{place.review}</p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </section>
+
+      {/* In three columns the dishes sit in the middle, as the globe does on Travel; stacked, they follow
+          the review. Photos get the carousel; every dish gets a line. */}
+      {place && dishes.length > 0 && (
+        <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3 max-[1023px]:order-last">
+          {pictured.length > 0 && (
+            <PhotoCarousel
+              photos={pictured.map((d) => d.photo)}
+              index={current}
+              onChange={showPhoto}
+              label={place.name}
+              revealKey={place.slug}
+            />
+          )}
+          <h3 className={label}>{dishes.length === 1 ? "DISH" : "DISHES"}</h3>
+          <ul key={`dishes-${place.slug}`} className="hairline-group">
+            {dishes.map((d, i) => {
+              const photoAt = pictured.indexOf(d);
+              const showing = photoAt !== -1 && photoAt === current;
+              const body = (
+                <>
+                  <span
+                    className={`min-w-0 font-display text-[22px] leading-[1.05] tracking-[0.05em] break-words ${
+                      showing ? "text-accent" : "text-ink"
+                    }`}
+                  >
+                    {d.name}
+                  </span>
+                  {d.tag && (
+                    <span className="ml-auto shrink-0 border border-accent/70 px-2 py-[3px] font-mono text-[11px] tracking-[0.12em] text-accent">
+                      {d.tag}
+                    </span>
+                  )}
+                </>
+              );
+              const row = "flex w-full animate-enter items-center gap-3 bg-panel-glass px-[15px] py-3 text-left";
+              return (
+                <li key={`${d.name}-${i}`} style={stagger(0.1 + i * 0.04)}>
+                  {photoAt === -1 ? (
+                    <div className={row}>{body}</div>
+                  ) : (
+                    <button
+                      type="button"
+                      aria-current={showing}
+                      aria-label={`Show photo: ${d.name}`}
+                      onClick={() => showPhoto(photoAt)}
+                      className={`${row} transition-colors duration-150 hover:bg-panel-raised`}
+                    >
+                      {body}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

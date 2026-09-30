@@ -9,7 +9,7 @@
     "price": "$",
     "visited": "2025-12-24",
     "score": 7.2,
-    "review": "⚠️ Placeholder row. A late-night classic; exactly what you want after midnight.",
+    "review": "Placeholder row. A late-night classic; exactly what you want after midnight.",
     "dishes": [
       {
         "name": "STEAK AND CHEESE",
@@ -31,7 +31,7 @@
     "price": "$$",
     "visited": "2025-12-28",
     "score": 8.4,
-    "review": "⚠️ Placeholder row. Fish and chips on the beach; the batter stays crisp.",
+    "review": "Placeholder row. Fish and chips on the beach; the batter stays crisp.",
     "dishes": [
       {
         "name": "SNAPPER AND CHIPS",
@@ -56,7 +56,7 @@
     "price": "$",
     "visited": "2026-06-18",
     "score": 8.8,
-    "review": "⚠️ Placeholder row. Cheap and fast; the soup dumplings are the reason to go.",
+    "review": "Placeholder row. Cheap and fast; the soup dumplings are the reason to go.",
     "dishes": [
       {
         "name": "XIAO LONG BAO",
@@ -85,7 +85,7 @@
     "price": "$$",
     "visited": "2026-08-02",
     "score": 9.3,
-    "review": "⚠️ Placeholder row. Rich broth, fast counter service, queue moves quickly.",
+    "review": "Placeholder row. Rich broth, fast counter service, queue moves quickly.",
     "dishes": [
       {
         "name": "TONKOTSU",
@@ -113,7 +113,7 @@
     "price": "$$",
     "visited": "2026-04-05",
     "score": 7.6,
-    "review": "⚠️ Placeholder row. Good tortillas; salsas could be hotter.",
+    "review": "Placeholder row. Good tortillas; salsas could be hotter.",
     "dishes": [
       {
         "name": "AL PASTOR"
@@ -138,7 +138,7 @@
     "price": "$$$",
     "visited": "2026-02-14",
     "score": 8.1,
-    "review": "⚠️ Placeholder row. Small plates and a long list by the glass.",
+    "review": "Placeholder row. Small plates and a long list by the glass.",
     "dishes": [
       {
         "name": "BURRATA"
@@ -163,7 +163,7 @@
     "price": "$$",
     "visited": "2026-10-10",
     "score": 9.6,
-    "review": "⚠️ Placeholder row. Standing room only; skewers straight off the grill.",
+    "review": "Placeholder row. Standing room only; skewers straight off the grill.",
     "dishes": [
       {
         "name": "TSUKUNE",

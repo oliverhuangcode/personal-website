@@ -14,7 +14,8 @@ interface PhotoCarouselProps {
   revealKey?: string | number;
 }
 
-const arrow = "px-2 py-0.5 font-mono text-[12px] text-ink-muted hover:text-ink";
+/** Arrows and dots keep a 36px hit area around their small marks, for thumbs. */
+const arrow = "min-h-9 min-w-9 font-mono text-[12px] text-ink-muted hover:text-ink";
 
 /** One slide per photo. Controls only appear when there is more than one. */
 export function PhotoCarousel({ photos, fallbacks, index, onChange, label, revealKey }: PhotoCarouselProps) {
@@ -33,7 +34,7 @@ export function PhotoCarousel({ photos, fallbacks, index, onChange, label, revea
         />
       </div>
       {count > 1 && (
-        <div role="group" aria-label={`${label} photos`} className="flex items-center justify-center gap-2">
+        <div role="group" aria-label={`${label} photos`} className="flex items-center justify-center">
           <button type="button" aria-label="Previous photo" onClick={() => go(current - 1)} className={arrow}>
             ◂
           </button>
@@ -44,8 +45,14 @@ export function PhotoCarousel({ photos, fallbacks, index, onChange, label, revea
               aria-label={`Photo ${i + 1} of ${count}`}
               aria-current={i === current}
               onClick={() => go(i)}
-              className={`h-1 w-6 transition-colors duration-150 ${i === current ? "bg-accent" : "bg-border-strong"}`}
-            />
+              className="group flex h-9 items-center px-1"
+            >
+              <span
+                className={`block h-1 w-6 transition-colors duration-150 ${
+                  i === current ? "bg-accent" : "bg-border-strong group-hover:bg-rule"
+                }`}
+              />
+            </button>
           ))}
           <button type="button" aria-label="Next photo" onClick={() => go(current + 1)} className={arrow}>
             ▸
