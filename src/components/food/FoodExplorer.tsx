@@ -311,11 +311,13 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
       >
         {place && (
           <>
-            <div key={`head-${place.slug}`} className="flex flex-col gap-3.5">
-              <p className="animate-enter font-mono text-[12px] tracking-[0.3em] text-ink">
+            {/* No entrance and not keyed by pick: the text swaps in place rather than blanking
+                and fading back in, on a pick and on arriving at the page. */}
+            <div className="flex flex-col gap-3.5">
+              <p className="font-mono text-[12px] tracking-[0.3em] text-ink">
                 RANK #{pad2(placeRank)} / {pad2(restaurants.length)}
               </p>
-              <div className="flex animate-enter items-baseline justify-between gap-3" style={stagger(0.04)}>
+              <div className="flex items-baseline justify-between gap-3">
                 <h2 className="font-display text-trip-name font-normal text-title">{place.name}</h2>
                 <span className="font-mono text-[32px] leading-none text-accent">
                   {place.score.toFixed(1)}
@@ -324,11 +326,8 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
               </div>
             </div>
             <Meter score={place.score} />
-            <div key={`body-${place.slug}`} className="flex flex-col gap-3.5">
-              <ul
-                className="flex animate-enter flex-wrap gap-1.5 font-mono text-[11px] font-medium tracking-[0.1em]"
-                style={stagger(0.08)}
-              >
+            <div className="flex flex-col gap-3.5">
+              <ul className="flex flex-wrap gap-1.5 font-mono text-[11px] font-medium tracking-[0.1em]">
                 {[place.area, place.cuisine, place.price, place.visited && formatVisited(place.visited)]
                   .filter(Boolean)
                   .map((c) => (
@@ -338,7 +337,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                   ))}
               </ul>
               {place.review && (
-                <div className="animate-enter border-l-2 border-accent bg-panel-glass p-5" style={stagger(0.12)}>
+                <div className="border-l-2 border-accent bg-panel-glass p-5">
                   <p className="text-[16px] leading-[1.55] text-pretty text-ink-dim">{place.review}</p>
                 </div>
               )}
@@ -361,7 +360,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
             />
           )}
           <h3 className={label}>{dishes.length === 1 ? "DISH" : "DISHES"}</h3>
-          <ul key={`dishes-${place.slug}`} className="hairline-group">
+          <ul className="hairline-group">
             {dishes.map((d, i) => {
               const photoAt = pictured.indexOf(d);
               const showing = photoAt !== -1 && photoAt === current;
@@ -381,9 +380,9 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                   )}
                 </>
               );
-              const row = "flex w-full animate-enter items-center gap-3 bg-panel-glass px-[15px] py-3 text-left";
+              const row = "flex w-full items-center gap-3 bg-panel-glass px-[15px] py-3 text-left";
               return (
-                <li key={`${d.name}-${i}`} style={stagger(0.1 + i * 0.04)}>
+                <li key={i}>
                   {photoAt === -1 ? (
                     <div className={row}>{body}</div>
                   ) : (

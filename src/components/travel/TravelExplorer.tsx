@@ -6,7 +6,6 @@ import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import { MAX_TRIP_PHOTOS } from "@/content/trips";
 import type { Trip } from "@/content/types";
 import { useArrowCycle } from "@/lib/keys";
-import { stagger } from "@/lib/motion";
 import { pad2, pad3 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
@@ -100,22 +99,14 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
           label={trip.name}
           revealKey={index}
         />
-        {/* Keyed on the trip, not the section: the live region must persist to announce. */}
-        <div
-          key={`title-${index}`}
-          className="flex animate-enter items-baseline justify-between gap-3"
-          style={stagger(0.04)}
-        >
+        {/* Swapped in place, not replayed per trip, so the text never blanks on a pick. */}
+        <div className="flex items-baseline justify-between gap-3">
           <h2 className="font-display text-trip-name font-normal text-title">{trip.name}</h2>
           <span className="font-mono text-[11px] tracking-[0.14em] text-ink-muted">
             {pad3(index + 1)} · {trip.status}
           </span>
         </div>
-        <ul
-          key={`cities-${index}`}
-          className="flex animate-enter flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]"
-          style={stagger(0.08)}
-        >
+        <ul className="flex flex-wrap gap-1.5 font-mono text-[10px] font-medium tracking-[0.1em]">
           {trip.cities.map((city) => (
             <li
               key={city}
@@ -125,11 +116,7 @@ export function TravelExplorer({ trips }: { trips: Trip[] }) {
             </li>
           ))}
         </ul>
-        <p
-          key={`note-${index}`}
-          className="animate-enter text-[16px] leading-[1.55] text-pretty text-ink-dim"
-          style={stagger(0.12)}
-        >
+        <p className="text-[16px] leading-[1.55] text-pretty text-ink-dim">
           {trip.note}
         </p>
       </section>

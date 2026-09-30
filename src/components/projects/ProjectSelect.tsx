@@ -80,7 +80,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
         <div className="flex min-w-0 flex-col gap-3.5">
           <div className="grid font-display text-project-name font-normal">
             <Ghosts texts={projects.map((p) => p.name)} />
-            <h2 key={`name-${selected}`} className="animate-enter [grid-area:1/1] font-normal text-title">
+            <h2 className="[grid-area:1/1] font-normal text-title">
               {project.name}
             </h2>
           </div>
@@ -118,14 +118,13 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
             {/* Every tab shares one title height, so only the body needs reserving. */}
             <div className="grid font-display text-[22px] leading-none tracking-[0.08em]">
               <Ghosts texts={TABS.map((t) => t.title)} />
-              {/* The live region itself must persist for announcements; only its content remounts. */}
-              <h3 key={`title-${selected}-${tab}`} className="animate-swap [grid-area:1/1] font-normal">
+              <h3 className="[grid-area:1/1] font-normal">
                 {activeTab.title}
               </h3>
             </div>
             <div className="grid text-[16px] leading-[1.5] text-pretty">
               <Ghosts texts={projects.flatMap((p) => TABS.map((t) => t.body(p)))} />
-              <p key={`body-${selected}-${tab}`} className="animate-swap [grid-area:1/1] text-ink-dim">
+              <p className="[grid-area:1/1] text-ink-dim">
                 {activeTab.body(project)}
               </p>
             </div>

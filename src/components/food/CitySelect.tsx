@@ -5,7 +5,6 @@ import { useState, ViewTransition } from "react";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { NavLink } from "@/components/ui/NavLink";
 import { formatCoords, type CitySummary } from "@/lib/food";
-import { stagger } from "@/lib/motion";
 import { pad3 } from "@/lib/nav";
 
 /** Map-select style city banners. The pick follows the pointer and keyboard focus; ← / → belong to the food tabs. */
@@ -18,11 +17,7 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
         const active = i === selected;
         return (
           // An odd last card spans the row rather than leaving a hole beside it.
-          <li
-            key={city.slug}
-            style={stagger(i * 0.05)}
-            className="animate-enter md:[&:last-child:nth-child(odd)]:col-span-2"
-          >
+          <li key={city.slug} className="md:[&:last-child:nth-child(odd)]:col-span-2">
             <NavLink
               href={`/food/${city.slug}`}
               onFocus={() => setSelected(i)}
