@@ -52,3 +52,6 @@ next-env.d.ts
 
 # photos
 .photo-inbox/
+
+# Impeccable critique snapshots: local design-review archive
+.impeccable/
