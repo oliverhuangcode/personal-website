@@ -8,12 +8,29 @@
     "cuisine": "SAMOAN",
     "price": "$$$$",
     "visited": "",
-    "score": 9.1,
+    "score": 9.4,
     "review": "Fire ass fine dining really interesting flavours",
     "dishes": [],
     "coords": {
-      "lat": -36.8556067,
-      "lon": 174.7775066
+      "lat": -36.855611,
+      "lon": 174.780082
+    }
+  },
+  {
+    "slug": "bornga",
+    "name": "BORNGA",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "area": "CBD",
+    "cuisine": "KOREAN",
+    "price": "$$$",
+    "visited": "",
+    "score": 7.2,
+    "review": "Str8 meat",
+    "dishes": [],
+    "coords": {
+      "lat": -37.811904,
+      "lon": 144.966957
     }
   },
   {
@@ -29,8 +46,8 @@
     "review": "Japanese wagyu steak was yummy",
     "dishes": [],
     "coords": {
-      "lat": -37.8075064,
-      "lon": 144.963411
+      "lat": -37.807506,
+      "lon": 144.965986
     }
   },
   {
@@ -44,7 +61,28 @@
     "visited": "",
     "score": 9,
     "review": "Best italian in melbourne imo",
-    "dishes": []
+    "dishes": [],
+    "coords": {
+      "lat": -37.791578,
+      "lon": 144.976243
+    }
+  },
+  {
+    "slug": "meatmaiden",
+    "name": "MEATMAIDEN",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "area": "CBD",
+    "cuisine": "STEAK",
+    "price": "$$$",
+    "visited": "",
+    "score": 7.5,
+    "review": "Steak was good did get kinda salty",
+    "dishes": [],
+    "coords": {
+      "lat": -37.814305,
+      "lon": 144.967761
+    }
   },
   {
     "slug": "pepe-s",
@@ -52,11 +90,16 @@
     "city": "MELBOURNE",
     "citySlug": "melbourne",
     "area": "CBD",
-    "cuisine": "",
+    "cuisine": "ITALIAN",
+    "price": "$$$",
     "visited": "",
     "score": 7.7,
-    "review": "",
-    "dishes": []
+    "review": "Vodka pasta and kingfish ceviche was good",
+    "dishes": [],
+    "coords": {
+      "lat": -37.809279,
+      "lon": 144.969035
+    }
   },
   {
     "slug": "armorica",
@@ -67,12 +110,80 @@
     "cuisine": "FRENCH",
     "price": "$$$",
     "visited": "",
-    "score": 8.8,
+    "score": 9,
     "review": "Pastas were one of the best ive had",
     "dishes": [],
     "coords": {
-      "lat": -33.8868517,
-      "lon": 151.2112358
+      "lat": -33.886856,
+      "lon": 151.213811
+    }
+  },
+  {
+    "slug": "jimmy-s-falafels",
+    "name": "JIMMY'S FALAFELS",
+    "city": "SYDNEY",
+    "citySlug": "sydney",
+    "area": "CBD",
+    "cuisine": "MIDDLE-EASTERN",
+    "price": "$$",
+    "visited": "",
+    "score": 7.7,
+    "review": "Falafels were good who woulda thunk",
+    "dishes": [],
+    "coords": {
+      "lat": -33.866706,
+      "lon": 151.207322
+    }
+  },
+  {
+    "slug": "olympus",
+    "name": "OLYMPUS",
+    "city": "SYDNEY",
+    "citySlug": "sydney",
+    "area": "REDFERN",
+    "cuisine": "GREEK",
+    "price": "$$$",
+    "visited": "",
+    "score": 8.5,
+    "review": "Lots of dip and meat yum",
+    "dishes": [],
+    "coords": {
+      "lat": -33.891894,
+      "lon": 151.212316
+    }
+  },
+  {
+    "slug": "restaurant-hubert",
+    "name": "RESTAURANT HUBERT",
+    "city": "SYDNEY",
+    "citySlug": "sydney",
+    "area": "CBD",
+    "cuisine": "FRENCH",
+    "price": "$$$$",
+    "visited": "",
+    "score": 8.8,
+    "review": "Set menu was mid but ala carte was goated",
+    "dishes": [],
+    "coords": {
+      "lat": -33.86513,
+      "lon": 151.21042
+    }
+  },
+  {
+    "slug": "spicy-joint",
+    "name": "SPICY JOINT",
+    "city": "SYDNEY",
+    "citySlug": "sydney",
+    "area": "HAYMARKET",
+    "cuisine": "CHINESE",
+    "price": "$$",
+    "visited": "",
+    "score": 8,
+    "review": "the tried and true goat spot apparently it fell off tho..",
+    "dishes": [],
+    "coords": {
+      "lat": -33.877793,
+      "lon": 151.20366
     }
   }
 ]

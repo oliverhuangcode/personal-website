@@ -1,7 +1,57 @@
 {
+  "https://maps.app.goo.gl/68s7V3VuTGH2KfPT8": {
+    "lat": -33.877793,
+    "lon": 151.20366,
+    "area": "Haymarket"
+  },
+  "https://maps.app.goo.gl/9Mzp4KDT4kXTRNJc9": {
+    "lat": -37.807506,
+    "lon": 144.965986,
+    "area": "Melbourne"
+  },
+  "https://maps.app.goo.gl/Da6dcC7uVLadRph16": {
+    "lat": -37.791578,
+    "lon": 144.976243,
+    "area": "Fitzroy North"
+  },
   "https://maps.app.goo.gl/LbNtYcbrBGARiW1Y6": {
     "lat": -33.886856,
     "lon": 151.213811,
     "area": "Surry Hills"
+  },
+  "https://maps.app.goo.gl/UdcRKR4Zya9cBPQS9": {
+    "lat": -37.809279,
+    "lon": 144.969035,
+    "area": "Melbourne"
+  },
+  "https://maps.app.goo.gl/WbZP7bDeJ6oZz3Yj9": {
+    "lat": -37.811904,
+    "lon": 144.966957,
+    "area": "Melbourne"
+  },
+  "https://maps.app.goo.gl/ZMUoyV9RwwsGhKYHA": {
+    "lat": -33.891894,
+    "lon": 151.212316,
+    "area": "Redfern"
+  },
+  "https://maps.app.goo.gl/Zo8xMSttW826ixvMA": {
+    "lat": -33.86513,
+    "lon": 151.21042,
+    "area": "Sydney"
+  },
+  "https://maps.app.goo.gl/tZHbiKj1axen34US7": {
+    "lat": -33.866706,
+    "lon": 151.207322,
+    "area": "Sydney"
+  },
+  "https://maps.app.goo.gl/uVLGSmWqQB8ZZxWK6": {
+    "lat": -36.855611,
+    "lon": 174.780082,
+    "area": "Parnell"
+  },
+  "https://maps.app.goo.gl/zgWQZoi1jA2KfSca7": {
+    "lat": -37.814305,
+    "lon": 144.967761,
+    "area": "Melbourne"
   }
 }
