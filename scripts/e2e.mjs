@@ -86,11 +86,11 @@ const shows = (loc, text) =>
     .first()
     .waitFor({ timeout: 2000 })
     .then(() => true, () => false);
-await p.getByRole("button", { name: "RESULT" }).click();
-if (!(await shows(p.locator("#project-detail"), "Four orgs"))) fail.push("RESULT tab content wrong");
-await p.getByRole("button", { name: "05 SIGNAL" }).click();
+await p.getByRole("button", { name: "STACK" }).click();
+if (!(await shows(p.locator("#project-detail"), "Drizzle"))) fail.push("STACK tab content wrong");
+await p.getByRole("button", { name: "02 WEAVE" }).click();
 if (!(await shows(p.locator("#project-detail"), "OVERVIEW"))) fail.push("selecting a project did not reset to INFO");
-if (!(await shows(p.locator("h2"), "SIGNAL"))) fail.push("project name did not update");
+if (!(await shows(p.locator("h2"), "WEAVE"))) fail.push("project name did not update");
 
 // 7. The boot overlay must not swallow interaction while it plays
 {
@@ -140,10 +140,10 @@ if (!(await shows(p.locator("h2"), "SIGNAL"))) fail.push("project name did not u
       };
     }
   });
-  await ap.getByRole("button", { name: "ROLE" }).click();
+  await ap.getByRole("button", { name: "STACK" }).click();
   if ((await ap.evaluate(() => window.__started)) !== 0) fail.push("sound played while disabled");
   await ap.keyboard.press("s");
-  await ap.getByRole("button", { name: "STACK" }).click();
+  await ap.getByRole("button", { name: "INFO" }).click();
   await ap.waitForTimeout(200);
   // One click = transient + carrier + modulator + fifth.
   const started = await ap.evaluate(() => window.__started);

@@ -12,15 +12,12 @@ export interface Photo {
 
 export interface Project {
   name: string;
-  /** Short discipline label shown above the name, e.g. "FULL-STACK". */
-  role: string;
-  year: string;
-  kind: string;
-  status: string;
   overview: string;
-  myRole: string;
   stack: string;
-  result: string;
+  /** Live site. */
+  url?: string;
+  /** Source code. */
+  repo?: string;
   screenshot?: Photo;
 }
 

@@ -1,78 +1,37 @@
+import { mediaPhoto } from "./media";
 import type { Project } from "./types";
 
-// ⚠️ PLACEHOLDER — invented copy from the design prototype. Replace with real projects.
+// Newest first: the page opens on the first project. Screenshots come from
+// .photo-inbox/projects/<slug>/cover.* via `npm run photos`.
 export const projects: Project[] = [
   {
-    name: "ATLAS",
-    role: "FULL-STACK",
-    year: "2026",
-    kind: "WEB APP",
-    status: "SHIPPED",
+    name: "MONMAP",
     overview:
-      "A scheduling tool for esports orgs. Built and shipped in six weeks; four teams use it to run their weekly scrims.",
-    myRole: "Solo build. Schema, API, front end, deploys.",
-    stack: "TypeScript, React, Node, Postgres. Hosted on Fly.io.",
-    result:
-      "Four orgs onboarded in the first month. Scrim scheduling went from hours of group chat to minutes.",
+      "A course planner for Monash students, replacing MonPlan after it was shut down in June 2026. Drag units onto a year-by-year grid and it checks prerequisites and offerings against the handbook as you go.",
+    stack:
+      "Next.js, TypeScript and Postgres with Drizzle. A scraper pulls every handbook year (about 37k units) from CourseLoop.",
+    url: "https://monmap.monashcoding.com",
+    repo: "https://github.com/monashcoding/monmap",
+    screenshot: mediaPhoto("projects/monmap/cover", "The MonMap planner showing a year-by-year unit grid"),
   },
   {
-    name: "VERGE",
-    role: "FRONT END",
-    year: "2025",
-    kind: "MARKETING SITE",
-    status: "LIVE",
-    overview: "Marketing site and storefront for a small hardware studio making desk accessories.",
-    myRole: "Front end and performance work alongside one back-end engineer.",
-    stack: "Astro, TypeScript, Stripe, Cloudflare.",
-    result:
-      "Largest contentful paint under one second. Launch week was their biggest preorder day to date.",
+    name: "WEAVE",
+    overview:
+      "A mobile-first web app for finding clothes and trying them on virtually. Built by a team of six in a weekend, it placed 3rd overall at UNIHACK 2025.",
+    stack:
+      "Next.js front end with a Go API, MongoDB and Auth0. Image processing runs on AWS Lambda, and try-ons use the FASHN API.",
+    url: "https://unihack.jasondev.me",
+    repo: "https://github.com/jason301c/unihack-2025",
+    screenshot: mediaPhoto("projects/weave/cover", "The Weave app showing a virtual try-on"),
   },
   {
-    name: "KILN",
-    role: "PLATFORM",
-    year: "2025",
-    kind: "INTERNAL TOOLING",
-    status: "IN USE",
+    name: "JOB BOARD",
     overview:
-      "A component library and CLI covering forms, tables and auth flows for a twelve-person product team.",
-    myRole: "Owned the library end to end, including docs and migration guides.",
-    stack: "React, TypeScript, Storybook, Changesets.",
-    result: "Cut feature setup time roughly in half. Engineers stopped rebuilding the same table.",
-  },
-  {
-    name: "NORTH",
-    role: "BACK END",
-    year: "2024",
-    kind: "REALTIME",
-    status: "SHIPPED",
-    overview:
-      "Live scoring and overlay service for a local LAN tournament, driving broadcast graphics from a single source of truth.",
-    myRole: "Solo. Websocket server, admin panel and OBS browser sources.",
-    stack: "Node, Redis, WebSockets, Svelte admin.",
-    result: "Ran two events without a dropped connection. Organisers reused it the following year.",
-  },
-  {
-    name: "SIGNAL",
-    role: "SIDE PROJECT",
-    year: "2024",
-    kind: "MOBILE",
-    status: "PROTOTYPE",
-    overview:
-      "A companion app for reviewing your own matches: timeline scrubbing with tagged mistakes you can jump between.",
-    myRole: "Self-directed. Design and build.",
-    stack: "React Native, SQLite, ffmpeg.",
-    result: "Unshipped. Kept here because the interaction model is the best thing in this list.",
-  },
-  {
-    name: "RELAY",
-    role: "HARDWARE",
-    year: "2023",
-    kind: "WEEKEND BUILD",
-    status: "RUNNING",
-    overview:
-      "A physical status display for my desk showing calendar, CI status and what I'm listening to.",
-    myRole: "Solo weekend build.",
-    stack: "Raspberry Pi, Python, e-ink panel.",
-    result: "Still running. Has never once told me anything useful before 9am.",
+      "A job board for Australian students looking for internships and graduate roles. Listings are pulled from several sources every day, deduplicated, then cleaned up and summarised with AI.",
+    stack:
+      "Next.js, React, TypeScript, Mantine and Tailwind on MongoDB. Go scrapers, deployed to Azure Container Apps.",
+    url: "https://jobs.monashcoding.com",
+    repo: "https://github.com/monashcoding/mploy-app",
+    screenshot: mediaPhoto("projects/mploy/cover", "The MPLOY job board with filters and a list of listings"),
   },
 ];

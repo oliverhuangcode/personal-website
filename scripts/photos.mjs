@@ -8,6 +8,7 @@
  * Inbox layout (names are slugified, so case and spaces don't matter):
  *   .photo-inbox/food/<restaurant>/<dish name>.heic   -> key food/<restaurant>/<dish>
  *   .photo-inbox/travel/<trip>/<n>.jpg                -> key travel/<trip>/<n>
+ *   .photo-inbox/projects/<project>/cover.png         -> key projects/<project>/cover
  *
  * Each photo is rotated upright, stripped of all metadata (including GPS), saved as a
  * 1600px and a 640px WebP named by content hash, and uploaded with an immutable cache
@@ -34,7 +35,7 @@ import { loadEnvLocal } from "./lib/env.mjs";
 import { loadTs } from "./lib/load-ts.mjs";
 
 const INBOX = ".photo-inbox";
-const KINDS = ["food", "travel"];
+const KINDS = ["food", "travel", "projects"];
 const MANIFEST = "src/content/media.generated.json";
 const FOOD = "src/content/food.generated.json";
 const EXTENSIONS = new Set([".heic", ".heif", ".jpg", ".jpeg", ".png", ".webp", ".avif", ".tif", ".tiff"]);
@@ -64,16 +65,50 @@ function r2() {
   return { client, bucket: R2_BUCKET };
 }
 
+/**
+ * Runs each step on its own so a failure names what was refused. HeadBucket
+ * alone failing usually means an object-only token, which uploads don't need.
+ */
 async function check() {
   const { client, bucket } = r2();
   const Key = "_check/ping.txt";
-  await client.send(new HeadBucketCommand({ Bucket: bucket }));
-  await client.send(new PutObjectCommand({ Bucket: bucket, Key, Body: "ok", ContentType: "text/plain" }));
-  const got = await client.send(new GetObjectCommand({ Bucket: bucket, Key }));
-  const body = await got.Body.transformToString();
-  await client.send(new DeleteObjectCommand({ Bucket: bucket, Key }));
-  if (body !== "ok") throw new Error("read back the wrong content");
-  console.log(`R2 OK: bucket "${bucket}" is reachable, writable and readable.`);
+  const steps = [
+    ["see the bucket", () => client.send(new HeadBucketCommand({ Bucket: bucket }))],
+    ["write an object", () => client.send(new PutObjectCommand({ Bucket: bucket, Key, Body: "ok", ContentType: "text/plain" }))],
+    ["read it back", async () => {
+      const got = await client.send(new GetObjectCommand({ Bucket: bucket, Key }));
+      if ((await got.Body.transformToString()) !== "ok") throw new Error("read back the wrong content");
+    }],
+    ["delete it", () => client.send(new DeleteObjectCommand({ Bucket: bucket, Key }))],
+  ];
+  let failed = 0;
+  let badSecret = false;
+  for (const [label, run] of steps) {
+    try {
+      await run();
+      console.log(`ok    ${label}`);
+    } catch (err) {
+      failed++;
+      badSecret ||= err.Code === "SignatureDoesNotMatch" || err.name === "SignatureDoesNotMatch";
+      const status = err.$metadata?.httpStatusCode;
+      console.log(`FAIL  ${label}: ${status ? `HTTP ${status}` : ""} ${err.Code ?? err.name ?? ""} ${err.message ?? ""}`.trim());
+    }
+  }
+  if (!failed) return console.log(`\nR2 OK: bucket "${bucket}" is reachable, writable and readable.`);
+  if (badSecret) {
+    console.log(
+      `\nSignatureDoesNotMatch: R2 knows the access key ID but not this secret. R2_SECRET_ACCESS_KEY should be` +
+        ` 64 hex characters; the one loaded is ${process.env.R2_SECRET_ACCESS_KEY.length}. A value already set in` +
+        ` your shell wins over .env, so check \`echo \${#R2_SECRET_ACCESS_KEY}\` too.`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `\n403 on every step: the token can't reach bucket "${bucket}". Check R2_ACCOUNT_ID is the account that owns it,` +
+      ` the token covers that exact bucket name, and the bucket isn't in an EU jurisdiction (different endpoint).` +
+      `\n403 on "see the bucket" only: the token is object-only, which is enough; uploads will work.`,
+  );
+  process.exit(1);
 }
 
 /**
@@ -133,7 +168,7 @@ function foodWarnings(files) {
 async function run() {
   const files = inboxFiles();
   if (!files.length) {
-    console.log(`Nothing in ${INBOX}/food or ${INBOX}/travel.`);
+    console.log(`Nothing in ${KINDS.map((k) => `${INBOX}/${k}`).join(", ")}.`);
     return;
   }
 

@@ -1,1 +1,23 @@
-{}
+{
+  "projects/monmap/cover": {
+    "full": "projects/monmap/cover-aa72ee5a-1600.webp",
+    "thumb": "projects/monmap/cover-aa72ee5a-640.webp",
+    "width": 1600,
+    "height": 892,
+    "color": "#f8f8f8"
+  },
+  "projects/mploy/cover": {
+    "full": "projects/mploy/cover-873a9f8d-1600.webp",
+    "thumb": "projects/mploy/cover-873a9f8d-640.webp",
+    "width": 1600,
+    "height": 1000,
+    "color": "#282828"
+  },
+  "projects/weave/cover": {
+    "full": "projects/weave/cover-b5e5de86-1600.webp",
+    "thumb": "projects/weave/cover-b5e5de86-640.webp",
+    "width": 1600,
+    "height": 1000,
+    "color": "#f8f8f8"
+  }
+}

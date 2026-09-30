@@ -5,18 +5,16 @@ import { startTransition, useState, ViewTransition } from "react";
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import type { Project } from "@/content/types";
 import { useArrowCycle } from "@/lib/keys";
-import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
 const TABS = [
   { label: "INFO", title: "OVERVIEW", body: (p: Project) => p.overview },
-  { label: "ROLE", title: "MY ROLE", body: (p: Project) => p.myRole },
   { label: "STACK", title: "STACK", body: (p: Project) => p.stack },
-  { label: "RESULT", title: "RESULT", body: (p: Project) => p.result },
 ] as const;
 
 const chip = "px-3 py-[7px]";
+const link = "outline-1 -outline-offset-1 outline-border-strong transition-colors duration-150 hover:text-accent hover:outline-accent";
 
 /** The active tab's fill and the roster bar glide to a new pick (see `.marker` in globals.css). */
 function Highlight({ name, className }: { name: string; className: string }) {
@@ -25,6 +23,19 @@ function Highlight({ name, className }: { name: string; className: string }) {
       <span aria-hidden className={`absolute ${className}`} />
     </ViewTransition>
   );
+}
+
+/**
+ * Invisible copies of every variant, stacked in one grid cell with the live text,
+ * so the cell always takes the tallest variant's height and switching never
+ * moves anything below it, whatever the window width.
+ */
+function Ghosts({ texts }: { texts: string[] }) {
+  return texts.map((text, i) => (
+    <span key={i} aria-hidden className="invisible [grid-area:1/1]">
+      {text}
+    </span>
+  ));
 }
 
 /** Character-select style browser: media and detail above a roster strip. */
@@ -52,7 +63,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
       <h1 className="sr-only">Projects</h1>
       <div className="mx-auto grid w-full max-w-[1280px] flex-1 grid-cols-[repeat(auto-fit,minmax(min(100%,320px),1fr))] items-center gap-grid px-gutter pt-[clamp(12px,min(3vw,3dvh),44px)]">
         {/* Capped by window height so the page fits without scrolling on laptop screens. */}
-        <div className="flex w-full max-w-[max(240px,calc((100dvh-350px)*4/3))] min-w-0 flex-col gap-2.5 justify-self-center">
+        <div className="flex w-full max-w-[max(240px,calc((100dvh-380px)*16/10))] min-w-0 flex-col gap-2.5 justify-self-center">
           <p className="font-mono text-[11px] tracking-[0.16em] text-ink-muted">
             PROJECT {no} / {total}
           </p>
@@ -61,22 +72,18 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
             <MediaFrame
               photo={project.screenshot}
               sizes="(min-width: 1280px) 600px, (min-width: 700px) 50vw, 100vw"
-              className="chamfer-x aspect-[4/3]"
+              className="chamfer-x aspect-[16/10]"
             />
           </div>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-[18px]">
-          <p key={`role-${selected}`} className="animate-enter font-mono text-[12px] tracking-[0.3em] text-ink">
-            {project.role}
-          </p>
-          <h2
-            key={`name-${selected}`}
-            className="animate-enter font-display text-project-name font-normal text-title"
-            style={stagger(0.04)}
-          >
-            {project.name}
-          </h2>
+        <div className="flex min-w-0 flex-col gap-3.5">
+          <div className="grid font-display text-project-name font-normal">
+            <Ghosts texts={projects.map((p) => p.name)} />
+            <h2 key={`name-${selected}`} className="animate-enter [grid-area:1/1] font-normal text-title">
+              {project.name}
+            </h2>
+          </div>
 
           <div
             role="group"
@@ -93,7 +100,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                   blip("tab");
                   startTransition(() => setTab(i));
                 }}
-                className={`relative flex-1 bg-panel-raised px-2 py-3 text-center transition-colors duration-150 ${
+                className={`relative flex-1 bg-panel-raised px-2 py-2.5 text-center transition-colors duration-150 ${
                   i === tab ? "text-bg" : "text-ink"
                 }`}
               >
@@ -106,28 +113,42 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
           <div
             id="project-detail"
             aria-live="polite"
-            className="flex flex-col gap-3 border-l-2 border-accent bg-panel-glass p-5"
+            className="flex flex-col gap-2 border-l-2 border-accent bg-panel-glass px-5 py-4"
           >
-            {/* The live region itself must persist for announcements; only its content remounts. */}
-            <div key={`${selected}-${tab}`} className="flex animate-swap flex-col gap-3">
-              <h3 className="font-display text-[24px] leading-none font-normal tracking-[0.08em]">
+            {/* Every tab shares one title height, so only the body needs reserving. */}
+            <div className="grid font-display text-[22px] leading-none tracking-[0.08em]">
+              <Ghosts texts={TABS.map((t) => t.title)} />
+              {/* The live region itself must persist for announcements; only its content remounts. */}
+              <h3 key={`title-${selected}-${tab}`} className="animate-swap [grid-area:1/1] font-normal">
                 {activeTab.title}
               </h3>
-              <p className="text-[17px] leading-[1.55] text-pretty text-ink-dim">{activeTab.body(project)}</p>
+            </div>
+            <div className="grid text-[16px] leading-[1.5] text-pretty">
+              <Ghosts texts={projects.flatMap((p) => TABS.map((t) => t.body(p)))} />
+              <p key={`body-${selected}-${tab}`} className="animate-swap [grid-area:1/1] text-ink-dim">
+                {activeTab.body(project)}
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
-            <span className={`${chip} bg-panel-raised`}>{project.year}</span>
-            <span className={`${chip} bg-panel-raised`}>{project.kind}</span>
-            <span className={`${chip} bg-accent text-bg`}>{project.status}</span>
+            {project.url && (
+              <a href={project.url} target="_blank" rel="noreferrer" className={`${chip} ${link}`}>
+                VISIT ↗
+              </a>
+            )}
+            {project.repo && (
+              <a href={project.repo} target="_blank" rel="noreferrer" className={`${chip} ${link}`}>
+                SOURCE ↗
+              </a>
+            )}
           </div>
         </div>
       </div>
 
       <nav
         aria-label="Project roster"
-        className="mx-auto flex w-full max-w-[1280px] flex-col gap-3 px-gutter pt-[clamp(8px,min(2.5vw,2dvh),28px)] pb-[clamp(20px,min(4vw,4dvh),44px)]"
+        className="mx-auto flex w-full max-w-[1280px] flex-col gap-2.5 px-gutter pt-[clamp(8px,min(2vw,2dvh),24px)] pb-[clamp(12px,min(3vw,3dvh),32px)]"
       >
         <div className="h-px bg-[linear-gradient(90deg,transparent,#2e2b38_20%,#2e2b38_80%,transparent)]" />
         {/* safe-center keeps the first thumbnail reachable when the row overflows. */}
@@ -135,7 +156,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
           {projects.map((p, i) => {
             const active = i === selected;
             return (
-              <li key={p.name} className="flex-[0_0_72px]">
+              <li key={p.name} className="flex-[0_0_60px]">
                 <button
                   type="button"
                   onClick={() => pick(i)}
@@ -145,7 +166,7 @@ export function ProjectSelect({ projects }: { projects: Project[] }) {
                 >
                   <MediaFrame
                     photo={p.screenshot}
-                    sizes="72px"
+                    sizes="60px"
                     fallback={pad2(i + 1)}
                     zoom
                     className={`aspect-square w-full outline-2 -outline-offset-2 ${
