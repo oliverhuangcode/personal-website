@@ -20,8 +20,6 @@
   --color-title: #ffffff;
   /* Planned-trip chips and empty meter tracks. */
   --color-chip: #25222e;
-  /* Food scores only — deliberately not the accent. */
-  --color-score: #7fb8de;
   --color-rule: #585264;
   --color-transparent: transparent;
 
@@ -52,6 +50,8 @@
   --animate-pulse: pulse 1.4s ease-in-out infinite;
   /* Selection feedback: fast, decelerating, no overshoot — a HUD snaps, it doesn't bounce. */
   --animate-wipe: wipe 0.26s var(--ease-snap) both;
+  /* Menus unfold downward from their trigger. */
+  --animate-drop: drop 0.22s var(--ease-snap) both;
   --animate-enter: enter 0.28s var(--ease-snap) both;
   /* Tab content: switched often, so it only fades, fast and with no delay. */
   --animate-swap: swap 0.16s var(--ease-snap) both;
@@ -97,6 +97,14 @@
   @keyframes wipe {
     from {
       clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+  @keyframes drop {
+    from {
+      clip-path: inset(0 0 100% 0);
     }
     to {
       clip-path: inset(0);

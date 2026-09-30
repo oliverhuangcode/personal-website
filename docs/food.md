@@ -56,17 +56,6 @@ Only your machine uploads photos, so these keys never go into GitHub.
 | coords | | `-37.8136, 144.9631` | long-press the place in Google Maps and copy; used by the map later |
 
 - Rank is worked out from the score, so row order doesn't matter.
-- The tier shown next to each score comes from it too:
-
-  | score | tier |
-  |---|---|
-  | 9.5+ | RADIANT |
-  | 9+ | IMMORTAL |
-  | 8+ | DIAMOND |
-  | 7+ | PLATINUM |
-  | 6+ | GOLD |
-  | below 6 | IRON |
-
 - A row missing its name, city or a valid score is **skipped with a warning**; it doesn't block the rest. Skipped rows are listed on the Action's run page.
 - If the sheet can't be fetched at all, the run fails, GitHub emails you, and nothing on the site changes.
 
@@ -90,7 +79,7 @@ Add a cuisine the first time you need it, but reuse the existing one when it's c
 
 Write one in square brackets after the dish, e.g. `Tonkotsu [MUST ORDER]`.
 
-**Scores:** a rough scale keeps them comparable across years:
+**Scores:** a rough scale keeps them comparable across years. On the site, score bars run from 5 to 10:
 
 | score | meaning |
 |---|---|

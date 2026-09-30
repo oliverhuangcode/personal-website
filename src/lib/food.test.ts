@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Restaurant } from "@/content/types";
 
-import { formatCoords, formatVisited, groupByCity, meterPercent, rankRestaurants, tierFor } from "./food";
+import { formatCoords, formatVisited, groupByCity, meterPercent, rankRestaurants } from "./food";
 
 const r = (name: string, score: number, extra: Partial<Restaurant> = {}): Restaurant => ({
   slug: name.toLowerCase(),
@@ -27,23 +27,6 @@ describe("rankRestaurants", () => {
     const list = [r("A", 1), r("B", 2)];
     rankRestaurants(list);
     expect(list.map((x) => x.name)).toEqual(["A", "B"]);
-  });
-});
-
-describe("tierFor", () => {
-  it("maps scores onto tiers at the boundaries", () => {
-    expect([10, 9.5, 9.4, 9, 8, 7.9, 7, 6, 5.9, 0].map(tierFor)).toEqual([
-      "RADIANT",
-      "RADIANT",
-      "IMMORTAL",
-      "IMMORTAL",
-      "DIAMOND",
-      "PLATINUM",
-      "PLATINUM",
-      "GOLD",
-      "IRON",
-      "IRON",
-    ]);
   });
 });
 

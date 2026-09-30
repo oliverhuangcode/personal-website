@@ -5,20 +5,6 @@ export function rankRestaurants(list: readonly Restaurant[]): Restaurant[] {
   return [...list].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-/** Competitive-rank flavour for a score out of 10, best first. */
-export const TIERS = [
-  [9.5, "RADIANT"],
-  [9, "IMMORTAL"],
-  [8, "DIAMOND"],
-  [7, "PLATINUM"],
-  [6, "GOLD"],
-  [0, "IRON"],
-] as const;
-
-export function tierFor(score: number): string {
-  return TIERS.find(([min]) => score >= min)![1];
-}
-
 /** Meters start at 5: every score worth logging lands between 5 and 10, so that span fills the bar. */
 export const METER_FLOOR = 5;
 

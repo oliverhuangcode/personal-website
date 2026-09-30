@@ -7,6 +7,7 @@ import { NavLink } from "@/components/ui/NavLink";
 import { useArrowCycle } from "@/lib/keys";
 import { formatCoords, type CitySummary } from "@/lib/food";
 import { stagger } from "@/lib/motion";
+import { pad3 } from "@/lib/nav";
 import { blip } from "@/lib/sound/sound";
 
 /** Map-select style city banners. ← / → move the pick and focus it, so Enter opens it. */
@@ -53,16 +54,17 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_0%,transparent_75%)]" />
               </div>
-              <span className="relative self-end font-mono text-[11px] tracking-[0.16em] text-ink-muted">
-                {city.coords && formatCoords(city.coords)}
-              </span>
+              <div className="relative flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[11px] tracking-[0.16em] text-ink-muted">
+                <span>{pad3(i + 1)}</span>
+                {city.coords && <span>{formatCoords(city.coords)}</span>}
+              </div>
               <div className="relative flex flex-col gap-2">
                 <span className="font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title">
                   {city.name}
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.14em] text-ink-dim">
                   {city.count} {city.count === 1 ? "SPOT" : "SPOTS"} · AVG{" "}
-                  <span className="text-score">{city.average.toFixed(1)}</span>
+                  <span className="text-accent">{city.average.toFixed(1)}</span>
                 </span>
               </div>
               {/* The chamfer clips outlines, so keyboard focus draws its frame inside the card. */}

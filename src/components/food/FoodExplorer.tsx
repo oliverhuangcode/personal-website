@@ -2,9 +2,10 @@
 
 import { startTransition, useEffect, useMemo, useRef, useState, ViewTransition } from "react";
 
+import { Dropdown } from "@/components/ui/Dropdown";
 import { PhotoCarousel } from "@/components/ui/PhotoCarousel";
 import type { Restaurant } from "@/content/types";
-import { cuisines, formatVisited, meterPercent, TIERS, tierFor } from "@/lib/food";
+import { cuisines, formatVisited, METER_FLOOR, meterPercent } from "@/lib/food";
 import { useArrowCycle } from "@/lib/keys";
 import { stagger } from "@/lib/motion";
 import { pad2 } from "@/lib/nav";
@@ -29,19 +30,22 @@ function Highlight({ name }: { name: string }) {
   );
 }
 
+/** Whole-number marks along the meter's 5–10 run. */
+const METER_TICKS = Array.from({ length: 10 - METER_FLOOR - 1 }, (_, i) => METER_FLOOR + 1 + i);
+
 /**
- * Score bar starting at 5 (see `meterPercent`), with ticks at the tier lines. It stays mounted
+ * Score bar starting at 5 (see `meterPercent`), marked at each whole point. It stays mounted
  * across picks, so after its first fill it travels from one score to the next.
  */
 function Meter({ score }: { score: number }) {
   return (
     <div aria-hidden className="relative h-2 bg-chip">
       <div
-        className="h-full origin-left animate-meter bg-score transition-[width] duration-[1400ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
+        className="h-full origin-left animate-meter bg-accent transition-[width] duration-[1400ms] ease-[cubic-bezier(0.33,1,0.68,1)]"
         style={{ width: `${meterPercent(score)}%`, ...stagger(0.12) }}
       />
-      {TIERS.slice(0, -1).map(([min]) => (
-        <span key={min} className="absolute inset-y-0 w-px bg-bg" style={{ left: `${meterPercent(min)}%` }} />
+      {METER_TICKS.map((n) => (
+        <span key={n} className="absolute inset-y-0 w-px bg-bg" style={{ left: `${meterPercent(n)}%` }} />
       ))}
     </div>
   );
@@ -180,30 +184,19 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
       <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
         <div className="flex flex-wrap items-stretch gap-2 font-mono text-[11px] font-medium tracking-[0.12em]">
           {kinds.length > 1 && (
-            <label className="relative flex min-w-[180px] flex-1 items-center bg-panel-raised">
-              <span className="sr-only">Cuisine</span>
-              <select
-                value={cuisine}
-                onChange={(e) => {
-                  blip("tab");
-                  setLimit(PAGE);
-                  startTransition(() => setCuisine(e.target.value));
-                }}
-                className={`w-full cursor-pointer appearance-none bg-transparent py-2.5 pr-9 pl-3 tracking-[0.12em] outline-none focus-visible:outline-2 focus-visible:outline-accent ${
-                  cuisine ? "text-accent" : "text-ink"
-                }`}
-              >
-                <option value="">ALL CUISINES ({restaurants.length})</option>
-                {kinds.map((k) => (
-                  <option key={k} value={k}>
-                    {k} ({kindCounts.get(k)})
-                  </option>
-                ))}
-              </select>
-              <span aria-hidden className="pointer-events-none absolute right-3 text-ink-muted">
-                ▾
-              </span>
-            </label>
+            <Dropdown
+              label="CUISINE"
+              value={cuisine}
+              options={[
+                { value: "", label: "ALL", count: restaurants.length },
+                ...kinds.map((k) => ({ value: k, label: k, count: kindCounts.get(k) })),
+              ]}
+              onChange={(next) => {
+                setLimit(PAGE);
+                startTransition(() => setCuisine(next));
+              }}
+              className="min-w-[200px] flex-1"
+            />
           )}
           {/* Not a control yet: a status tag until the map exists. */}
           <span className="ml-auto flex items-center border border-border px-3 py-2.5 text-ink-muted">MAP · SOON</span>
@@ -242,20 +235,15 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
                   }`}
                 >
                   {active && <Highlight name="food-row" />}
-                  <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-score" : "opacity-75"}`}>
+                  <span className={`relative font-mono text-[11px] ${!active && n <= 3 ? "text-accent" : "opacity-75"}`}>
                     #{pad2(n)}
                   </span>
                   <span className="relative min-w-0 font-display text-[23px] leading-[1.05] tracking-[0.05em] break-words">
                     {r.name}
                   </span>
-                  <span className="relative ml-auto flex shrink-0 items-baseline gap-3 font-mono">
-                    <span className="hidden text-[11px] tracking-[0.12em] opacity-75 min-[400px]:inline">
-                      {tierFor(r.score)}
-                    </span>
-                    <span className="w-[30px] text-right text-[13px] tracking-[0.04em]">
-                      {r.score.toFixed(1)}
-                      <span className="sr-only"> out of 10</span>
-                    </span>
+                  <span className="relative ml-auto w-[30px] shrink-0 text-right font-mono text-[13px] tracking-[0.04em]">
+                    {r.score.toFixed(1)}
+                    <span className="sr-only"> out of 10</span>
                   </span>
                 </button>
               </li>
@@ -303,7 +291,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
 
       {/* One short announcement per pick, rather than the whole review read out again. */}
       <p aria-live="polite" className="sr-only">
-        {place ? `Rank ${placeRank}: ${place.name}, ${place.score.toFixed(1)} out of 10, ${tierFor(place.score)}` : "No matches"}
+        {place ? `Rank ${placeRank}: ${place.name}, ${place.score.toFixed(1)} out of 10` : "No matches"}
       </p>
 
       <section
@@ -314,15 +302,12 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
         {place && (
           <>
             <div key={`head-${place.slug}`} className="flex flex-col gap-3.5">
-              <p className="flex animate-enter justify-between gap-3 font-mono text-[12px] tracking-[0.3em] text-ink">
-                <span>
-                  RANK #{pad2(placeRank)} / {pad2(restaurants.length)}
-                </span>
-                <span className="text-[11px] tracking-[0.2em] text-score">{tierFor(place.score)}</span>
+              <p className="animate-enter font-mono text-[12px] tracking-[0.3em] text-ink">
+                RANK #{pad2(placeRank)} / {pad2(restaurants.length)}
               </p>
               <div className="flex animate-enter items-baseline justify-between gap-3" style={stagger(0.04)}>
                 <h2 className="font-display text-trip-name font-normal text-title">{place.name}</h2>
-                <span className="font-mono text-[32px] leading-none text-score">
+                <span className="font-mono text-[32px] leading-none text-accent">
                   {place.score.toFixed(1)}
                   <span className="sr-only"> out of 10</span>
                 </span>
