@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { isTypingTarget } from "@/lib/keys";
+import { isTypingTarget, releaseFocus } from "@/lib/keys";
 import { PAGES, navDirection, stepPage, type NavDirection } from "@/lib/nav";
 import { blip, toggleSound } from "@/lib/sound/sound";
 
@@ -19,6 +19,7 @@ export function KeyboardNav() {
 
   useEffect(() => {
     const go = (href: string, direction: NavDirection) => {
+      releaseFocus();
       blip("nav");
       router.push(href, { transitionTypes: [direction] });
     };
@@ -44,6 +45,7 @@ export function KeyboardNav() {
         e.preventDefault();
         go(stepPage(pathname, -1).href, "nav-back");
       } else if (e.key.toLowerCase() === "s" && !e.shiftKey) {
+        releaseFocus();
         toggleSound();
       }
     };
