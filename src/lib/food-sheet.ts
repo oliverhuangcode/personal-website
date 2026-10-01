@@ -5,7 +5,7 @@
  * tests run it directly. Photos are joined on by the script, not here.
  */
 
-import type { Dish, Restaurant } from "../content/types";
+import type { Dish, LoggedRestaurant } from "../content/types";
 
 import { slugify } from "./slug";
 
@@ -155,7 +155,7 @@ export const COLUMNS = [
 ] as const;
 
 export interface SheetResult {
-  restaurants: Restaurant[];
+  restaurants: LoggedRestaurant[];
   /** One line per skipped row or ignored cell, for the sync log. */
   warnings: string[];
 }
@@ -178,7 +178,7 @@ export function parseSheet(csv: string, places: Record<string, MapsPlace> = {}):
     return i === undefined ? "" : (row[i] ?? "").trim();
   };
 
-  const restaurants: Restaurant[] = [];
+  const restaurants: LoggedRestaurant[] = [];
   const seen = new Set<string>();
 
   rows.forEach((row, n) => {

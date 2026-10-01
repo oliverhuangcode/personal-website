@@ -6,9 +6,13 @@
  *   npm run photos -- --check     # confirm the R2 credentials and bucket work
  *
  * Inbox layout (names are slugified, so case and spaces don't matter):
- *   .photo-inbox/food/<restaurant>/<dish name>.heic   -> key food/<restaurant>/<dish>
+ *   .photo-inbox/food/<restaurant>/IMG_1234.heic      -> key food/<restaurant>/img-1234
  *   .photo-inbox/travel/<trip>/<n>.jpg                -> key travel/<trip>/<n>
  *   .photo-inbox/projects/<project>/cover.png         -> key projects/<project>/cover
+ *
+ * Every run first makes an empty food/<restaurant>/ folder for each spot in the sheet, and a
+ * travel/<trip>/ folder for each trip in src/content/trips.ts, that doesn't have one yet, so
+ * there's always somewhere to drop the photos.
  *
  * Each photo is rotated upright, stripped of all metadata (including GPS), saved as a
  * 1600px and a 640px WebP named by content hash, and uploaded with an immutable cache
@@ -46,6 +50,7 @@ const args = new Set(process.argv.slice(2));
 const dryRun = args.has("--dry-run");
 
 const { slugify } = await loadTs("src/lib/food-sheet.ts");
+const { trips } = await loadTs("src/content/trips.ts");
 
 function r2() {
   loadEnvLocal();
@@ -156,16 +161,50 @@ function inboxFiles() {
   return files;
 }
 
-/** Photos for dishes the sheet doesn't list still upload, but are flagged. */
-function foodWarnings(files) {
-  if (!existsSync(FOOD)) return [];
-  const known = new Set(
-    JSON.parse(readFileSync(FOOD, "utf8")).flatMap((r) => r.dishes.map((d) => `food/${r.slug}/${slugify(d.name)}`)),
-  );
-  return files.filter((f) => f.kind === "food" && !known.has(f.key)).map((f) => f.key);
+function loggedRestaurants() {
+  return existsSync(FOOD) ? JSON.parse(readFileSync(FOOD, "utf8")) : [];
+}
+
+/** Where each kind's photos can go: a display name per folder, and the slug its photos are keyed by. */
+function destinations() {
+  return {
+    food: loggedRestaurants().map((r) => ({ name: r.name, slug: r.slug })),
+    travel: trips.map((t) => ({ name: t.name, slug: slugify(t.name) })),
+  };
+}
+
+/** One folder per restaurant and trip, named as listed. A folder that already slugs the same is left alone. */
+function makeFolders() {
+  for (const [kind, list] of Object.entries(destinations())) {
+    const root = join(INBOX, kind);
+    mkdirSync(root, { recursive: true });
+    const have = new Set(
+      readdirSync(root, { withFileTypes: true }).filter((d) => d.isDirectory()).map((d) => slugify(d.name)),
+    );
+    const made = [];
+    for (const { name, slug } of list) {
+      if (have.has(slug)) continue;
+      mkdirSync(join(root, name.replace(/[/\\:]/g, "-")));
+      have.add(slug);
+      made.push(name);
+    }
+    if (made.length) console.log(`New folders in ${root}/: ${made.join(", ")}`);
+  }
+}
+
+/** Photos in a folder that matches no restaurant or trip still upload, but are flagged. */
+function folderWarnings(files) {
+  const known = Object.entries(destinations()).map(([kind, list]) => list.map((d) => `${kind}/${d.slug}`));
+  const keys = new Set(known.flat());
+  return [
+    ...new Set(
+      files.filter((f) => f.kind !== "projects" && !keys.has(`${f.kind}/${slugify(f.folder)}`)).map((f) => `${f.kind}/${f.folder}`),
+    ),
+  ];
 }
 
 async function run() {
+  makeFolders();
   const files = inboxFiles();
   if (!files.length) {
     console.log(`Nothing in ${KINDS.map((k) => `${INBOX}/${k}`).join(", ")}.`);
@@ -227,8 +266,9 @@ async function run() {
     }
   }
 
-  for (const key of foodWarnings(files)) {
-    console.warn(`warning: ${key} doesn't match any dish in the sheet yet — check the folder and file names.`);
+  for (const folder of folderWarnings(files)) {
+    const where = folder.startsWith("food/") ? "restaurant in the sheet" : "trip in src/content/trips.ts";
+    console.warn(`warning: ${folder} doesn't match any ${where} yet — check the folder name.`);
   }
   if (!dryRun) console.log(`\nCommit ${MANIFEST} to publish.`);
 }

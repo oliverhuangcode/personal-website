@@ -36,7 +36,6 @@ export interface Trip {
 
 export interface Dish {
   name: string;
-  photo?: Photo;
   /** Optional callout chip, e.g. "MUST ORDER", "SKIP". */
   tag?: string;
 }
@@ -55,10 +54,15 @@ export interface Restaurant {
   /** Out of 10, one decimal place. Rank is derived from this. */
   score: number;
   review: string;
-  /** Up to MAX_DISHES. The carousel shows one slide per dish. */
+  /** Up to MAX_DISHES. */
   dishes: Dish[];
+  /** Up to MAX_FOOD_PHOTOS, of the meal as a whole rather than any one dish. */
+  photos: Photo[];
   coords?: { lat: number; lon: number };
 }
+
+/** A restaurant as the sheet sync writes it; photos are joined on later from the R2 manifest. */
+export type LoggedRestaurant = Omit<Restaurant, "photos">;
 
 export interface TimelineEntry {
   year: string;

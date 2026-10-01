@@ -112,28 +112,32 @@ Write one in square brackets after the dish, e.g. `Tonkotsu [MUST ORDER]`.
 ---
 
 ## Adding photos
-1. Copy the photos into the inbox, one folder per restaurant, and **name each file after its dish**:
+Photos belong to a restaurant, not a dish: shoot the whole spread, and the restaurant's carousel cycles through them all.
+
+1. Run `npm run photos` once. It makes a folder in `.photo-inbox/food/` for every spot in the sheet, and in `.photo-inbox/travel/` for every trip in `src/content/trips.ts`, that doesn't have one yet. After a new visit syncs, its folder appears on the next run.
+2. Drop photos into the restaurant's folder (AirDrop to the Mac works well). File names don't matter; the carousel shows them in name order, so iPhone `IMG_1234` names keep them in shooting order:
    ```
-   .photo-inbox/food/Ichiran/Tonkotsu.HEIC
-   .photo-inbox/food/Ichiran/Kaedama.jpg
+   .photo-inbox/food/TALA/IMG_1234.HEIC
+   .photo-inbox/food/TALA/IMG_1240.HEIC
    .photo-inbox/travel/Japan/1.jpg
    ```
-   - Case, spaces and extension don't matter; HEIC straight from an iPhone is fine.
-   - The folder name must match the restaurant's **name** in the sheet, and the file name must match a **dish**. Both are compared as slugs, so `Ichiran` and `ichiran` are the same.
-   - Travel folders match the trip names in `src/content/trips.ts`.
-2. Run `npm run photos`. For each photo it:
+   - HEIC straight from an iPhone is fine.
+   - A folder you make yourself works too, as long as it matches the restaurant's **name** in the sheet. Names are compared as slugs, so `Tala` and `TALA` are the same.
+   - Travel works the same way: a trip's carousel shows up to 8 photos, in name order.
+3. Run `npm run photos` again. For each photo it:
    - turns the photo upright;
    - removes all metadata, **including GPS location**;
    - saves a 1600px and a 640px WebP;
    - uploads both to R2 with a year-long cache;
    - records the photo in `media.generated.json`;
    - moves the original to `.photo-inbox/done/`.
-3. Commit `src/content/media.generated.json`.
+4. Commit `src/content/media.generated.json`.
 
 **Notes:**
 - `npm run photos -- --dry-run` converts into `.photo-inbox/preview/` without uploading, so you can check the output first.
-- Re-uploading a photo with the same name replaces it; the new file gets a new URL, so browsers never show the old one.
-- If a photo's name doesn't match any dish in the sheet, it still uploads, but you get a warning so you can fix the typo.
+- Re-uploading a photo with the same name into the same folder replaces it; the new file gets a new URL, so browsers never show the old one.
+- If a folder doesn't match any restaurant in the sheet, its photos still upload, but you get a warning so you can fix the name.
+- Each restaurant shows up to 12 photos. A city card's cover is the first photo of its best-ranked spot that has any.
 
 ---
 

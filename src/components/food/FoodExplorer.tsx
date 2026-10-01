@@ -60,7 +60,7 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
     setRevealFrom(Infinity);
   };
   const [selected, setSelected] = useState(restaurants[0]?.slug);
-  const [dishIndex, setDishIndex] = useState<Record<string, number>>({});
+  const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
   const listRef = useRef<HTMLOListElement>(null);
   const reviewRef = useRef<HTMLElement>(null);
   const revealReview = useRef(false);
@@ -164,12 +164,12 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
   };
 
   const dishes = place?.dishes ?? [];
-  const pictured = dishes.filter((d) => d.photo);
-  const current = place ? Math.min(dishIndex[place.slug] ?? 0, Math.max(pictured.length - 1, 0)) : 0;
+  const photos = place?.photos ?? [];
+  const current = place ? Math.min(photoIndex[place.slug] ?? 0, Math.max(photos.length - 1, 0)) : 0;
   const showPhoto = (i: number) => {
     if (!place) return;
     blip("photo");
-    setDishIndex((prev) => ({ ...prev, [place.slug]: i }));
+    setPhotoIndex((prev) => ({ ...prev, [place.slug]: i }));
   };
   const placeRank = place ? rank.get(place.slug)! : 0;
 
@@ -339,60 +339,38 @@ export function FoodExplorer({ restaurants }: { restaurants: Restaurant[] }) {
         )}
       </section>
 
-      {/* In three columns the dishes sit in the middle, as the globe does on Travel; stacked, they follow
-          the review. Photos get the carousel; every dish gets a line. */}
-      {place && dishes.length > 0 && (
+      {/* In three columns the photos and dishes sit in the middle, as the globe does on Travel; stacked,
+          they follow the review. */}
+      {place && (photos.length > 0 || dishes.length > 0) && (
         <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-3 max-[1023px]:order-last">
-          {pictured.length > 0 && (
+          {photos.length > 0 && (
             <PhotoCarousel
-              photos={pictured.map((d) => d.photo)}
+              photos={photos}
               index={current}
               onChange={showPhoto}
               label={place.name}
               revealKey={place.slug}
             />
           )}
-          <h3 className={label}>{dishes.length === 1 ? "DISH" : "DISHES"}</h3>
-          <ul className="hairline-group">
-            {dishes.map((d, i) => {
-              const photoAt = pictured.indexOf(d);
-              const showing = photoAt !== -1 && photoAt === current;
-              const body = (
-                <>
-                  <span
-                    className={`min-w-0 font-display text-[22px] leading-[1.05] tracking-[0.05em] break-words ${
-                      showing ? "text-accent" : "text-ink"
-                    }`}
-                  >
-                    {d.name}
-                  </span>
-                  {d.tag && (
-                    <span className="ml-auto shrink-0 border border-accent/70 px-2 py-[3px] font-mono text-[11px] tracking-[0.12em] text-accent">
-                      {d.tag}
+          {dishes.length > 0 && (
+            <>
+              <h3 className={label}>{dishes.length === 1 ? "DISH" : "DISHES"}</h3>
+              <ul className="hairline-group">
+                {dishes.map((d, i) => (
+                  <li key={i} className="flex w-full items-center gap-3 bg-panel-glass px-[15px] py-3">
+                    <span className="min-w-0 font-display text-[22px] leading-[1.05] tracking-[0.05em] break-words text-ink">
+                      {d.name}
                     </span>
-                  )}
-                </>
-              );
-              const row = "flex w-full items-center gap-3 bg-panel-glass px-[15px] py-3 text-left";
-              return (
-                <li key={i}>
-                  {photoAt === -1 ? (
-                    <div className={row}>{body}</div>
-                  ) : (
-                    <button
-                      type="button"
-                      aria-current={showing}
-                      aria-label={`Show photo: ${d.name}`}
-                      onClick={() => showPhoto(photoAt)}
-                      className={`${row} transition-colors duration-150 hover:bg-panel-raised`}
-                    >
-                      {body}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    {d.tag && (
+                      <span className="ml-auto shrink-0 border border-accent/70 px-2 py-[3px] font-mono text-[11px] tracking-[0.12em] text-accent">
+                        {d.tag}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </div>

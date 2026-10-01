@@ -14,6 +14,7 @@ const r = (name: string, score: number, extra: Partial<Restaurant> = {}): Restau
   visited: "",
   review: "",
   dishes: [],
+  photos: [],
   ...extra,
 });
 
@@ -42,7 +43,7 @@ describe("groupByCity", () => {
     const cities = groupByCity([
       r("Pie", 7, { city: "AUCKLAND", citySlug: "auckland", coords: { lat: -36, lon: 174 } }),
       r("A", 8, { coords: { lat: -37, lon: 144 } }),
-      r("B", 9, { dishes: [{ name: "X", photo }] }),
+      r("B", 9, { photos: [photo] }),
       r("C", 7, { coords: { lat: -38, lon: 146 } }),
     ]);
     expect(cities.map((c) => [c.slug, c.count, c.average])).toEqual([

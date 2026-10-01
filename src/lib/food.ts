@@ -22,7 +22,7 @@ export interface CitySummary {
   restaurants: Restaurant[];
   /** Mean of the spots that have coordinates. */
   coords?: { lat: number; lon: number };
-  /** The first dish photo from the best-ranked spot that has one. */
+  /** The first photo from the best-ranked spot that has one. */
   cover?: Photo;
 }
 
@@ -46,7 +46,7 @@ export function groupByCity(list: readonly Restaurant[]): CitySummary[] {
         ...(located.length && {
           coords: { lat: mean(located.map((c) => c.lat)), lon: mean(located.map((c) => c.lon)) },
         }),
-        cover: ranked.flatMap((r) => r.dishes.flatMap((d) => (d.photo ? [d.photo] : [])))[0],
+        cover: ranked.find((r) => r.photos.length)?.photos[0],
       };
     })
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
