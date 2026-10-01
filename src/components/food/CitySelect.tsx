@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, ViewTransition } from "react";
+import { useState } from "react";
 
 import { MediaFrame } from "@/components/ui/MediaFrame";
 import { NavLink } from "@/components/ui/NavLink";
 import { formatCoords, type CitySummary } from "@/lib/food";
 import { pad3 } from "@/lib/nav";
 
-/** Map-select style city banners. The pick follows the pointer and keyboard focus; ← / → belong to the food tabs. */
+/**
+ * Map-select style city banners. The pick follows the pointer and keyboard focus; ← / → belong
+ * to the food tabs. The picked card comes alive: its photo (or the stripes standing in for one)
+ * drifts in, the name steps forward, the number lights up, and its bar wipes in as the last
+ * pick's wipes out.
+ */
 export function CitySelect({ cities }: { cities: CitySummary[] }) {
   const [selected, setSelected] = useState(0);
 
@@ -29,19 +34,24 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
                 <MediaFrame
                   photo={city.cover}
                   thumb
-                  zoom
                   sizes="(min-width: 768px) 620px, 100vw"
-                  className="h-full bg-[repeating-linear-gradient(135deg,var(--color-panel)_0_10px,var(--color-panel-raised)_10px_11px)]"
-                  imageClassName="brightness-[0.55] saturate-[0.85]"
+                  className={`h-full bg-[repeating-linear-gradient(135deg,var(--color-panel)_0_10px,var(--color-panel-raised)_10px_11px)] ${
+                    active ? "animate-drift" : ""
+                  }`}
+                  imageClassName={`brightness-[0.55] saturate-[0.85] ${active ? "scale-[1.05]" : ""}`}
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_0%,transparent_75%)]" />
               </div>
               <div className="relative flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[11px] tracking-[0.16em] text-ink-muted">
-                <span>{pad3(i + 1)}</span>
+                <span className={`transition-colors duration-300 ${active ? "text-accent" : ""}`}>{pad3(i + 1)}</span>
                 {city.coords && <span>{formatCoords(city.coords)}</span>}
               </div>
               <div className="relative flex flex-col gap-2">
-                <span className="font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title">
+                <span
+                  className={`font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title transition-transform duration-300 ease-snap ${
+                    active ? "translate-x-2" : ""
+                  }`}
+                >
                   {city.name}
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.14em] text-ink-dim">
@@ -54,13 +64,13 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
                 aria-hidden
                 className="pointer-events-none absolute inset-0 hidden border-2 border-accent group-focus-visible:block"
               />
-              {/* The pick's bar glides between cards (see `.marker` in globals.css). */}
+              {/* Wipes in from the left on the pick, and out to the right as the pick moves on. */}
               <span aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-border-strong/60">
-                {active && (
-                  <ViewTransition name="city-bar" share="marker" default="none">
-                    <span className="absolute inset-0 bg-accent" />
-                  </ViewTransition>
-                )}
+                <span
+                  className={`absolute inset-0 bg-accent transition-transform duration-300 ease-snap ${
+                    active ? "origin-left scale-x-100" : "origin-right scale-x-0"
+                  }`}
+                />
               </span>
             </NavLink>
           </li>

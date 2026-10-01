@@ -58,6 +58,8 @@
   /* Tab content: switched often, so it only fades, fast and with no delay. */
   --animate-swap: swap 0.16s var(--ease-snap) both;
   --animate-fill: fill 0.7s var(--ease-snap) both;
+  /* The picked city card's stripes creep along, one stripe (11px at 135°) per loop. */
+  --animate-drift: drift 1.6s linear infinite;
   /* Score meters: slower, with a gentler ease-out than the snap, so the bar visibly travels. */
   --animate-meter: fill 1.4s cubic-bezier(0.33, 1, 0.68, 1) both;
   --ease-snap: cubic-bezier(0.16, 1, 0.3, 1);
@@ -125,6 +127,11 @@
     to {
       opacity: 1;
       transform: none;
+    }
+  }
+  @keyframes drift {
+    to {
+      background-position: 15.556px 0;
     }
   }
   @keyframes swap {
