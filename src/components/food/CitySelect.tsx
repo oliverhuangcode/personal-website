@@ -9,9 +9,9 @@ import { pad3 } from "@/lib/nav";
 
 /**
  * Map-select style city banners. The pick follows the pointer and keyboard focus; ← / → belong
- * to the food tabs. The picked card comes alive: its photo (or the stripes standing in for one)
- * drifts in, the name steps forward, the number lights up, and its bar wipes in as the last
- * pick's wipes out.
+ * to the food tabs. The picked card comes alive: it grows a touch, an accent glow rises from
+ * its bottom corner, its photo (or the stripes standing in for one) drifts, the number lights
+ * up, and its bar wipes in as the last pick's wipes out.
  */
 export function CitySelect({ cities }: { cities: CitySummary[] }) {
   const [selected, setSelected] = useState(0);
@@ -27,7 +27,9 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
               href={`/food/${city.slug}`}
               onFocus={() => setSelected(i)}
               onMouseEnter={() => setSelected(i)}
-              className="group chamfer-tr relative flex h-full min-h-[clamp(150px,15vw,184px)] outline-none transition-[scale] duration-150 ease-snap active:scale-[0.99] flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink"
+              className={`group chamfer-tr relative flex h-full min-h-[clamp(150px,15vw,184px)] outline-none transition-[scale] duration-300 ease-snap active:scale-[0.99] ${
+                active ? "z-10 scale-[1.015]" : ""
+              } flex-col justify-between gap-5 overflow-hidden bg-panel px-5 pt-3.5 pb-5 text-ink hover:text-ink`}
             >
               {/* The photo layer sits behind the text; its own wrapper keeps MediaFrame's `relative` from taking part in the layout. */}
               <div aria-hidden className="absolute inset-0">
@@ -41,17 +43,19 @@ export function CitySelect({ cities }: { cities: CitySummary[] }) {
                   imageClassName={`brightness-[0.55] saturate-[0.85] ${active ? "scale-[1.05]" : ""}`}
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_0%,transparent_75%)]" />
+                {/* A low accent glow rises from the bar while the card is picked. */}
+                <div
+                  className={`absolute inset-0 bg-[radial-gradient(120%_90%_at_0%_100%,color-mix(in_oklab,var(--color-accent)_22%,transparent),transparent_70%)] transition-opacity duration-500 ease-snap ${
+                    active ? "opacity-100" : "opacity-0"
+                  }`}
+                />
               </div>
               <div className="relative flex flex-wrap justify-between gap-x-3 gap-y-1 font-mono text-[11px] tracking-[0.16em] text-ink-muted">
                 <span className={`transition-colors duration-300 ${active ? "text-accent" : ""}`}>{pad3(i + 1)}</span>
                 {city.coords && <span>{formatCoords(city.coords)}</span>}
               </div>
               <div className="relative flex flex-col gap-2">
-                <span
-                  className={`font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title transition-transform duration-300 ease-snap ${
-                    active ? "translate-x-2" : ""
-                  }`}
-                >
+                <span className="font-display text-[clamp(40px,5vw,60px)] leading-[0.85] tracking-[0.03em] break-words text-title">
                   {city.name}
                 </span>
                 <span className="font-mono text-[11px] tracking-[0.14em] text-ink-dim">
