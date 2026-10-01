@@ -19,7 +19,7 @@ const chakra = Chakra_Petch({
 const azeret = Azeret_Mono({ weight: ["400", "500"], subsets: ["latin"], variable: "--font-azeret" });
 
 const description =
-  "Oliver Huang — software engineer in Melbourne, originally from Auckland. Projects, travel and food.";
+  "Oliver Huang is a software engineer in Melbourne, originally from Auckland, joining Atlassian as a graduate. Projects, travel and food.";
 
 export const metadata: Metadata = {
   // Resolves the generated opengraph-image to an absolute URL, which link previews require.
