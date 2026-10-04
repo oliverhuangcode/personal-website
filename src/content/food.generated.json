@@ -185,5 +185,27 @@
       "lat": -33.877793,
       "lon": 151.20366
     }
+  },
+  {
+    "slug": "the-waratah",
+    "name": "THE WARATAH",
+    "city": "SYDNEY",
+    "citySlug": "sydney",
+    "area": "DARLINGHURST",
+    "cuisine": "BRITISH",
+    "price": "$$",
+    "visited": "2026-04-10",
+    "score": 7.3,
+    "review": "Sunday roast was pretty good but lowk a little salty. Fire doh",
+    "dishes": [
+      {
+        "name": "SUNDAY ROAST",
+        "tag": "SIGNATURE"
+      }
+    ],
+    "coords": {
+      "lat": -33.878267,
+      "lon": 151.221262
+    }
   }
 ]
