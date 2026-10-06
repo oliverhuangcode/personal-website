@@ -102,6 +102,28 @@
     }
   },
   {
+    "slug": "sezar",
+    "name": "SEZAR",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "area": "CBD",
+    "cuisine": "MIDDLE EASTERN",
+    "price": "$$$",
+    "visited": "2026-06-10",
+    "score": 7.9,
+    "review": "Scallops were hella good with the sauce, I rlly fwed the oysters but noone else did lol. Lamb shoulder was a bit dry but the pieces were sauce were good, ribs better tbh. Rlly like the kingfish",
+    "dishes": [
+      {
+        "name": "LAMB SHOULDER, BAKED SCALLOP, BURNT BUTTER HOMMUS [MUST ORDER], OYSTER,  KINGFISH CRUDO, SLOW-ROASTED LAMB RIBS, HONEY & DATE GLAZED CARROTS, TRIPE COOKED POTATOES",
+        "tag": "SKIP"
+      }
+    ],
+    "coords": {
+      "lat": -37.813451,
+      "lon": 144.96892
+    }
+  },
+  {
     "slug": "armorica",
     "name": "ARMORICA",
     "city": "SYDNEY",
