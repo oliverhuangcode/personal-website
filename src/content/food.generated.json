@@ -124,6 +124,27 @@
     }
   },
   {
+    "slug": "walrus",
+    "name": "WALRUS",
+    "city": "MELBOURNE",
+    "citySlug": "melbourne",
+    "area": "BRUNSWICK",
+    "cuisine": "CAFE",
+    "price": "$$",
+    "visited": "",
+    "score": 6.4,
+    "review": "French toast was really good and the bodega roll was hella good i would try the sausage next. Blueberry pancakes were overhyped sorry",
+    "dishes": [
+      {
+        "name": "BLUEBERRY PANCAKES [SKIP],"
+      }
+    ],
+    "coords": {
+      "lat": -37.770493,
+      "lon": 144.961696
+    }
+  },
+  {
     "slug": "armorica",
     "name": "ARMORICA",
     "city": "SYDNEY",
