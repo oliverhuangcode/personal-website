@@ -22,7 +22,7 @@ const find = async (params: Promise<{ city: string }>) => {
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const city = await find(params);
   const name = city.name.charAt(0) + city.name.slice(1).toLowerCase();
-  return { title: `Food in ${name}` };
+  return { title: `Food in ${name}`, alternates: { canonical: `/food/${city.slug}` } };
 }
 
 export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {

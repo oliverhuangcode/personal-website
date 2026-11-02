@@ -1,7 +1,12 @@
+import type { Metadata } from "next";
+
 import { HoloCore } from "@/components/home/HoloCore";
 import { NavLink } from "@/components/ui/NavLink";
 import { site } from "@/content/site";
 import { stagger } from "@/lib/motion";
+import { personSchemaJson } from "@/lib/person-schema";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default function HomePage() {
   const [first, last] = site.name.toUpperCase().split(" ");
@@ -10,6 +15,7 @@ export default function HomePage() {
     // Not selectable: scrolling and swiping here spin the spike, and a stray drag shouldn't
     // paint a selection over the name.
     <main className="relative isolate flex flex-1 flex-col items-center justify-center overflow-hidden px-[clamp(16px,3vw,40px)] py-[clamp(40px,8dvh,90px)] text-center select-none">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: personSchemaJson }} />
       <HoloCore />
       <div className="relative z-10 flex w-full flex-col items-center gap-[26px]">
         {/* Assembles top to bottom, after the boot screen on a first visit. */}

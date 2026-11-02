@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { TravelExplorer } from "@/components/travel/TravelExplorer";
 import { trips } from "@/content/trips";
 
-export const metadata: Metadata = { title: "Travel" };
+export const metadata: Metadata = { title: "Travel", alternates: { canonical: "/travel" } };
 
 export default function TravelPage() {
   return (
