@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { links, readout, site, timeline } from "@/content/site";
 import { stagger } from "@/lib/motion";
 
-export const metadata: Metadata = { title: "About" };
+export const metadata: Metadata = { title: "About", alternates: { canonical: "/about" } };
 
 const sectionLabel = "font-mono text-[11px] tracking-[0.22em] text-ink-muted";
 /** Rows in each list slot in one after another. */

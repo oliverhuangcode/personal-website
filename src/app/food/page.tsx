@@ -5,7 +5,7 @@ import { FoodHeader } from "@/components/food/FoodHeader";
 import { restaurants } from "@/content/food";
 import { groupByCity } from "@/lib/food";
 
-export const metadata: Metadata = { title: "Food" };
+export const metadata: Metadata = { title: "Food", alternates: { canonical: "/food" } };
 
 const cities = groupByCity(restaurants);
 

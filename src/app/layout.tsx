@@ -6,6 +6,7 @@ import { BootScreen } from "@/components/site/BootScreen";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { KeyboardNav } from "@/components/site/KeyboardNav";
+import { SITE_URL } from "@/content/site";
 
 import "./globals.css";
 
@@ -23,7 +24,7 @@ const description =
 
 export const metadata: Metadata = {
   // Resolves the generated opengraph-image to an absolute URL, which link previews require.
-  metadataBase: new URL("https://www.olivrhuang.com"),
+  metadataBase: new URL(SITE_URL),
   title: { default: "Oliver Huang | Personal Site", template: "%s · Oliver Huang" },
   description,
   openGraph: {

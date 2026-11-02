@@ -5,7 +5,7 @@ import { Leaderboard } from "@/components/food/Leaderboard";
 import { restaurants } from "@/content/food";
 import { groupByCity, rankRestaurants } from "@/lib/food";
 
-export const metadata: Metadata = { title: "Food rankings" };
+export const metadata: Metadata = { title: "Food rankings", alternates: { canonical: "/food/rankings" } };
 
 const ranked = rankRestaurants(restaurants);
 const cities = groupByCity(restaurants).map(({ slug, name, count }) => ({ slug, name, count }));

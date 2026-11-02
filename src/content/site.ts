@@ -5,6 +5,9 @@ import type { ExternalLink, Photo, TimelineEntry } from "./types";
  */
 export const MEDIA_BASE = "https://media.olivrhuang.com";
 
+/** The one address search engines should index (www; the bare domain redirects here). */
+export const SITE_URL = "https://www.olivrhuang.com";
+
 export const site = {
   name: "Oliver Huang",
   title: "SOFTWARE ENGINEER",
