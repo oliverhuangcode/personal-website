@@ -19,23 +19,26 @@ const chakra = Chakra_Petch({
 });
 const azeret = Azeret_Mono({ weight: ["400", "500"], subsets: ["latin"], variable: "--font-azeret" });
 
+/** Name plus role and city: what people actually type when searching for this Oliver Huang. */
+const homeTitle = "Oliver Huang · Software Engineer, Melbourne";
+
 const description =
   "Oliver Huang is a software engineer in Melbourne, originally from Auckland, joining Atlassian as a graduate. Projects, travel and food.";
 
 export const metadata: Metadata = {
   // Resolves the generated opengraph-image to an absolute URL, which link previews require.
   metadataBase: new URL(SITE_URL),
-  title: { default: "Oliver Huang | Personal Site", template: "%s · Oliver Huang" },
+  title: { default: homeTitle, template: "%s · Oliver Huang" },
   description,
   openGraph: {
     type: "website",
     siteName: "Oliver Huang",
-    title: "Oliver Huang | Personal Site",
+    title: homeTitle,
     description,
     url: "/",
     locale: "en_AU",
   },
-  twitter: { card: "summary_large_image", title: "Oliver Huang | Personal Site", description },
+  twitter: { card: "summary_large_image", title: homeTitle, description },
 };
 
 export const viewport: Viewport = { themeColor: "#08070c" };
