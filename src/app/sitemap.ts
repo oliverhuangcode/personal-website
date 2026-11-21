@@ -8,7 +8,15 @@ import { groupByCity } from "@/lib/food";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages = ["", "/about", "/projects", "/travel", "/food", "/food/rankings"];
+  const pages = [
+    "",
+    "/about",
+    "/projects",
+    "/travel",
+    "/food",
+    "/food/rankings",
+    "/privacy",
+  ];
   const cities = groupByCity(restaurants).map((c) => `/food/${c.slug}`);
   return [...pages, ...cities].map((path) => ({
     url: `${SITE_URL}${path}`,
